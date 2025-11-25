@@ -262,6 +262,41 @@ function draw(){
     }
   }
 
+  // création de 4 vecteurs dans la base locale (e1, e2)
+  //let v1=createVector(1.0, 0.0);
+  //let v2=createVector(0.0, 1.0);
+  //let v3=createVector(0.0, -1.0);
+  //let v4=createVector(-1.0, 0.0);
+
+  //drawVector(0.0, 0.0, v1, 'red');
+  //drawVector(0.0, 0.0, v2, 'red');
+  //drawVector(0.0, 0.0, v3, 'red');
+  //drawVector(0.0, 0.0, v4, 'red');
+
+  //v1.normalize();
+  //v2.normalize();
+  //v3.normalize();
+  //v4.normalize();
+
+
+  // exprimer ces 4 vecteurs dans la base globale (x, y)
+  //[e1, e2]=gradCurvature(createVector(0.0, 0.0), timer_sec, angleParams);
+  //drawVector(0.0, 0.0, e1.copy().normalize().mult(20), 'blue');
+  //drawVector(0.0, 0.0, e2.copy().normalize().mult(20), 'blue');
+
+  //let theta1=createVector(1.0, 0.0).angleBetween(e1);
+  //let ct = Math.cos(theta1), st = Math.sin(theta1);
+  //let u1=createVector(ct*v1.x - st*v1.y, st*v1.x + ct*v1.y);
+  //let u2=createVector(ct*v2.x - st*v2.y, st*v2.x + ct*v2.y);
+  //let u3=createVector(ct*v3.x - st*v3.y, st*v3.x + ct*v3.y);
+  //let u4=createVector(ct*v4.x - st*v4.y, st*v4.x + ct*v4.y);
+
+  //drawVector(0.0, 0.0, u4.copy().mult(10), 'red');
+  //drawVector(0.0, 0.0, v2, 'red');
+  //drawVector(0.0, 0.0, v3, 'red');
+  //drawVector(0.0, 0.0, v4, 'red');
+
+
   // data 
   export_the_data();
 }

@@ -28,13 +28,11 @@ let c = 3.0;
 let phi0 = 0.0;
 let w = 1.0;
 let psi0 = 0.0;
-let angleParams=[[Math.PI/4.0, w, 60.0], 
-                 [-Math.PI/4.0, w, 1200.0]
+let angleParams=[[Math.PI/4.0, w, 600.0], 
+                 [-Math.PI/4.0, w, 1200.0],
                 ];
 
-//[[Math.PI/4.0, w, 1200.0], 
-//                 [-Math.PI/4.0, w, 2400.0]
-//                ];
+
 
 
 // II. Cell 

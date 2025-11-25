@@ -71,52 +71,22 @@ class Cell {
   // ------------------------------------------------------------------------------------
   update(t){
 
-    // external forces caused by curvature ... 
+    //-------------------------------------------- external forces caused by curvature and dynamic wave
     if (curvature_assumption){
       this.f_ext = this.get_Psi_curvature(this.position.copy(), this.velocity.copy(), t);
     } else {
       this.f_ext = createVector(0.0, 0.0);
     }
 
-    //let test=this.f_ext.mag();
-    //console.log(test);
-    //drawVector(this.position.x, this.position.y, this.f_ext.copy().mult(1000));
-
-    
     if (surf_assumption){
-      // ... and dynamic wave
       this.f_ext.add(this.get_Psi_wave(this.position.copy(), t));
     }
 
-    // P and S parameters are exressed in the local basis, they are expressed on the global x, y basis
-    let [gradH, gradH_perp] = gradCurvature(this.position, t, angleParams);    // local basis
-    let [Kxx, Kyy, Kxy]=curvature_tensor(this.position, t);
-    //console.log(Kxx.toFixed(2), Kyy.toFixed(2), Kxy.toFixed(2))
-    //console.log(Math.sqrt(Kxx**2.0+ Kyy**2.0+ 2.0*Kxy**2.0).toFixed(2), Math.sqrt(gradH.x**2.0+ gradH.y**2.0).toFixed(2));
-    //console.log(Kyy, Kyy.toFixed(2));
-    
+    // f_ext/velocity are expressed in the global basis (x, y) -> must be expressed in the local basis
+    this.f_ext=this.From_global_to_local(this.f_ext, t);
+    this.velocity=this.From_global_to_local(this.velocity, t);
 
-    this.theta=Math.abs(createVector(1.0, 0.0).angleBetween(gradH));
-    if (this.theta > Math.PI/2) {
-      this.theta = Math.PI - this.theta;
-    }
-
-    let c2=Math.cos(this.theta)**2.0; let s2=Math.sin(this.theta)**2.0;
-
-    let a=1.0/this.Px; let b=1.0/this.Py;
-    this.inv_polarityMatrix = [
-      [a*c2+b*s2, 0.0],
-      [0.0, b*c2+a*s2], 
-    ];
-
-    a=this.Sx / Math.sqrt(this.Px); b=this.Sy / Math.sqrt(this.Py);
-
-    this.diffusionMatrix = [ 
-      [a*c2+b*s2, 0.0],
-      [0.0, b*c2+a*s2]
-    ];
-
-    // velocity computation
+    //-------------------------------------------- velocity computation
     this.velocity = this.velocity.add(
       this.MultiplyMatrixWVector(this.get_Jacobian_Matrix(this.position.copy(), t), this.velocity.copy()).mult(dt*this.q)
     ).sub(
@@ -126,7 +96,9 @@ class Cell {
     );
 
 
-    // velocity integration to get cell position
+    //-------------------------------------------- velocity integration to get cell position
+    // velocity has been expressed in the local basis (e1, e2) -> must be expressed in the global basis
+    this.velocity=this.From_local_to_global(this.velocity, t);
     this.position.add(this.velocity.copy().mult(dt));
   }
   
@@ -195,13 +167,17 @@ class Cell {
     let [gradH, gradH_perp] = gradCurvature(pos, t, angleParams);
     let norm=gradH.mag();
     let sgn=Math.sign(gradH.dot(this.velocity));
-    let theta=Math.abs(gradH.angleBetween(this.velocity));
-    if (this.theta > Math.PI/2) {
-      this.theta = Math.PI - this.theta;
-    }
+    //let theta=Math.abs(gradH.angleBetween(this.velocity));
+    //if (this.theta > Math.PI/2) {
+    //  this.theta = Math.PI - this.theta;
+    //}
+    //let jacobian = [
+    //  [norm*Math.sin(theta)*sgn, 0.0],
+    //  [0.0, norm*Math.cos(theta)*sgn]
+    //];
     let jacobian = [
-      [norm*Math.sin(theta)*sgn, 0.0],
-      [0.0, norm*Math.cos(theta)*sgn]
+      [sgn*gradH.mag(), 0.0],
+      [0.0, 0.0]
     ];
     //console.log(Math.sin(theta), Math.cos(theta));
     return jacobian;
@@ -217,6 +193,28 @@ class Cell {
     } else {
       return 1.0;
     }
+  }
+
+  From_global_to_local(vec, t){
+    // take as input a vector expressed in the global static base (x, y) and returns the same vector expressed in the local basis (e1, e2) 
+    let [e1, e2]=gradCurvature(this.position, t, angleParams);
+    let theta=createVector(1.0, 0.0).angleBetween(e1);
+
+    let c = Math.cos(theta), s = Math.sin(theta);
+    let vx=vec.x, vy=vec.y;
+
+    return createVector(c*vx + s*vy, -s*vx + c*vy);
+  }
+
+  From_local_to_global(vec, t){
+    // take as input a vector expressed in the local basis (e1, e2) and returns the same vector expressed in the global static base (x, y) 
+    let [e1, e2]=gradCurvature(this.position, t, angleParams);
+    let theta=createVector(1.0, 0.0).angleBetween(e1);
+
+    let c = Math.cos(theta), s = Math.sin(theta);
+    let vx=vec.x, vy=vec.y;
+
+    return createVector(c*vx - s*vy, s*vx + c*vy);
   }
 
   multiplyRotationMatrixVector(angle, v) {
