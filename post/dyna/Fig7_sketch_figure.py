@@ -7,7 +7,7 @@
 import json
 
 import numpy as np
-from sklearn.metrics import r2_score
+#from sklearn.metrics import r2_score
 
 import os
 import regex as re
@@ -126,14 +126,14 @@ def get_assumption(metadata):
 #
 
 
-def plot_traj(metadata, data, N, mapping, xticks, yticks):
+def plot_traj(metadata, data, N, ax, xticks, yticks):
 
     ## random cells id to plot
     IDlist = np.random.choice(data['cell'].unique(), size=N, replace=False)
 
     # select axe to plot
-    assumption=get_assumption(metadata)
-    ax = mapping[assumption]
+    #assumption=get_assumption(metadata)
+    #ax = mapping[assumption]
    ## wl, c = metadata['Wavelength'], metadata['Wave Celerity']
 
     
@@ -160,20 +160,6 @@ def plot_traj(metadata, data, N, mapping, xticks, yticks):
     ax.set_xticks(xticks)
     ax.set_xlim(xticks[0], xticks[-1])
     ax.set_ylim(yticks[0], yticks[-1])
-        
-    ## print text
-    ax.text(0.4, 0.05, r"$q$=0", rotation='horizontal', fontsize=15, va='center', ha='center', transform=ax.transAxes)
-    ax.text(0.6, 0.05, r"$q$=1", rotation='horizontal', fontsize=15, va='center', ha='center', transform=ax.transAxes)
-    ax.text(0.5, 0.95, assumption + " cells", rotation='horizontal', fontsize=20, va='center', ha='center', transform=ax.transAxes)
-    
-    if assumption=='NDSC':
-        ax.arrow(0.08, 0.4, 0., 0.25, width=0.015, color='red', transform=ax.transAxes, clip_on=False, head_width=0.05, head_length=0.07) 
-        ax.arrow(0.15, 0.92, -0.08, 0., width=0.015, color='red', length_includes_head=True, transform=ax.transAxes, clip_on=False)
-        ax.arrow(0.15, 0.92, 0.12, 0., width=0.015, color='red', length_includes_head=True, transform=ax.transAxes, clip_on=False)
-        
-        ax.text(0.12, 0.55, r"Wave", transform=ax.transAxes, color='red', rotation = 'vertical', fontsize=22, fontweight='bold', va='center', ha='center')
-        ax.text(0.17, 0.86, r"Grooves", color='red', rotation='horizontal', fontsize=22, fontweight='bold', va='center', ha='center', transform=ax.transAxes)
-    #
 #
 
 def s_dyna(x, V):
@@ -321,70 +307,30 @@ def plot_critical(data, y, param, r2, ax, palette, plot_legend=False, xticks = [
 # ================================================================================================================
 # ================================================================================================================
 
+## loading data
 must_be_int = ['Surface Index', 'Number of Cells']
 
+substrate_regime="dyna"
+study="Rotation_de_PS"
 
 
-################### parameters for role of q
-## boucle 1  (barycentres)
-para1 = 'q'
-para1_values = [1.0, 0.0]
-para2='Vmax'
-para2_values = [4.0]
 
-assumptions = ['NDSC', 'DSC']
-alternate_id = {"NDSC":'cell_is_not_surfer', "DSC":'cell_is_surfer'}
 
-## boucle 2  (celerité critique)
-para3='q'
-para3_values=[0.0]
-para4='Vmax'
-para4_values=[2.0, 4.0, 6.0]
-assumptions_critic = ['DSC']
+## x and y axis
+xticks = [-2., 0., 2.]
+yticks = [-0.5, 0., 3.5]
 
-################### parameters for role of f_stat
-## boucle 3  (barycentres)
-para5 = 'Py'
-para5_values = [24.0]
-para6='Vmax'
-para6_values = [4.0]
+mapping_traj={1:ax_traj1, 2:ax_traj2, 3:ax3, 4:ax4, 5:ax5}
+Nb_to_plot=30
 
-## boucle 4  (celerité critique)
-para7='Py'
-para7_values=[24.0]
-para8='Vmax'
-para8_values=[2.0, 4.0, 6.0]
-
-################### trajectories scatter parameters
-mapping_traj={'NDSC': ax_traj1,
-              'DSC': ax_traj2
-            }
-#
-
-# x and y axis
-xticks = [-1.5, -0.1, 0., 0.1, 1.5]
-yticks = [-0.5, 0., 0.1, 0.2, 5.]
-
-################### statistics
-mapping_stats={('NDSC', 'bary'):ax1,
-               ('DSC', 'bary'):ax2,
-                }
-#
-
-x_axis_celerity = {'NDSC':5., 'DSC':15.}
-plot_sdyna_or_not={'NDSC':False, 'DSC':True}
-plot_legend_or_not={'NDSC':True, 'DSC':False}
-
-wavelengths_statistics=[20.]
-wavelengths_critic = [20., 40., 80.]
 
 ################### compute r2 score
-perform_stat = True
+perform_stat = False
 dependant_variable='vd'
 
 ################### export figure or not
 save = True
-path_to_save = 'rotation.svg'
+path_to_save = substrate_regime + "\\assets\\" + study + "\\" + "test.svg"
 
 
 ################### platte de couleur 
@@ -404,25 +350,29 @@ assumption_palette = ['#E1BE6A', '#40B0A6']
 # ================================================================================================================
 
 root = os.getcwd()
-list_of_paths=search_files_to_analyse(root + '\\' + 'rotation')
+list_of_paths=search_files_to_analyse(substrate_regime + "\\assets\\" + study)
 
+count=0
 for path in list_of_paths:
+    count+=1
+
+    print("\nload file nb", count)
+    print(path)
+    print("------------------------------")
+
     metadata, data=load_trajectory_data(path, must_be_int)
 
     # conversion µm -> mm and reverse y-axis
     data["y"] /= -1000.
     data["x"] /= 1000.
 
-    plot_traj(metadata, data, 30, mapping_traj, xticks, yticks)
-
+    plot_traj(metadata, data, Nb_to_plot, mapping_traj[count], xticks, yticks)
+#
 
     
 
 
 
-
-
-
 if save:
-    print('\n------------------------------------ export figure:')
-    plt.savefig(root + '\\' +  path_to_save)
+    print('\n------------------------------------ export figure')
+    plt.savefig(path_to_save)

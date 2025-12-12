@@ -219,7 +219,7 @@ function initTable(){
 
 // MAIN
 //-------------------------------------------------------------------------------------------------------
-
+let max=0.0;
 function draw(){
 
   // update time in seconds
@@ -262,11 +262,69 @@ function draw(){
     }
   }
 
-  // création de 4 vecteurs dans la base locale (e1, e2)
-  //let v1=createVector(1.0, 0.0);
-  //let v2=createVector(0.0, 1.0);
-  //let v3=createVector(0.0, -1.0);
-  //let v4=createVector(-1.0, 0.0);
+  //From_global_to_local(vec, t){
+  //  // take as input a vector expressed in the global static base (x, y) and returns the same vector expressed in the local basis (e1, e2) 
+  //  let [e1, e2]=gradCurvature(this.position, t, angleParams);
+  //  let theta=createVector(1.0, 0.0).angleBetween(e1);
+//
+  //  let c = Math.cos(theta), s = Math.sin(theta);
+  //  let vx=vec.x, vy=vec.y;
+//
+  //  return createVector(c*vx + s*vy, -s*vx + c*vy);
+  //}
+
+  //From_local_to_global(vec, t){
+  //  // take as input a vector expressed in the local basis (e1, e2) and returns the same vector expressed in the global static base (x, y) 
+  //  let [e1, e2]=gradCurvature(this.position, t, angleParams);
+  //  let theta=createVector(1.0, 0.0).angleBetween(e1);
+//
+  //  let c = Math.cos(theta), s = Math.sin(theta);
+  //  let vx=vec.x, vy=vec.y;
+//
+  //  return createVector(c*vx - s*vy, s*vx + c*vy);
+  //}
+
+
+  //let v0=createVector(0.0, 0.0);
+  //let v1=createVector(10.0, 10.0);
+  //let v2=createVector(200.0, 0.0);
+  //let v3=createVector(-100.0, 0.0);
+  //let v4=createVector(-200.0, 0.0);
+//
+  //// from global to local
+  //let [e1, e2]=gradCurvature(v0, timer_sec, angleParams);
+  //let theta=createVector(1.0, 0.0).angleBetween(e1);
+  //let c = Math.cos(theta), s = Math.sin(theta);
+  //let v1x=v1.x, v1y=v1.y;
+//
+  //drawVector(v0.x, v0.y, e1.copy().mult(10000), 'red');
+  //drawVector(v0.x, v0.y, e2.copy().mult(10000), 'red');
+  //drawVector(v0.x, v0.y, v1.copy().mult(2), 'blue');
+//
+//
+  //let v1_c=createVector(c*v1x + s*v1y, -s*v1x + c*v1y);
+  //v1x=v1_c.x, v1y=v1_c.y;
+  ////console.log((theta*180.0/Math.PI).toFixed(2), v1.x, v1_c.x.toFixed(2), v1.y, v1_c.y.toFixed(2));
+//
+  //v1_c=createVector(c*v1x - s*v1y, s*v1x + c*v1y);
+  //console.log((theta*180.0/Math.PI).toFixed(2), v1.x, v1_c.x.toFixed(2), v1.y, v1_c.y.toFixed(2));
+//
+
+
+
+
+
+  
+  //let k1 = meanCurvature(v0, timer_sec, angleParams);
+  //console.log(k1);
+
+
+  //let u0=phase_velocity(v0, timer_sec, angleParams).mag().toFixed(2);
+  //let u1=phase_velocity(v1, timer_sec, angleParams).mag().toFixed(2);
+  //let u2=phase_velocity(v2, timer_sec, angleParams).mag().toFixed(2);
+  //let u3=phase_velocity(v3, timer_sec, angleParams).mag().toFixed(2);
+  //let u4=phase_velocity(v4, timer_sec, angleParams).mag().toFixed(2);
+  //console.log(u4, u3, u0, u1, u2);
 
   //drawVector(0.0, 0.0, v1, 'red');
   //drawVector(0.0, 0.0, v2, 'red');

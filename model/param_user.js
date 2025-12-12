@@ -24,15 +24,13 @@ let surface = 'right_sinus';
 
 let a = 10.0;
 let lambda = 20.0;
-let c = 3.0;
+let c = 5.0;
 let phi0 = 0.0;
 let w = 1.0;
-let psi0 = 0.0;
-let angleParams=[[Math.PI/4.0, w, 600.0], 
-                 [-Math.PI/4.0, w, 1200.0],
-                ];
+let psi0 = 0.0-0.0;
+let angleParams=[];
 
-
+//[[-Math.PI/4.0, w, 600.0], [Math.PI/4.0, w, 1200.0]]
 
 
 // II. Cell 
@@ -46,7 +44,7 @@ let central_metric = 'mean';
 
 // assumption on cell dynamic    true  /  false
 let surf_assumption = true;  
-let curvature_assumption = true;
+let curvature_assumption = false;
 
 // III. Model integration
 //-------------------------------------------------------------------------------------------------------
@@ -55,7 +53,7 @@ let curvature_assumption = true;
 let dt_mesure = 15.0;
 
 // simulation is stopped when the window is closed. Tmax is the duration in seconds of the trajectories recording.
-let Tmax = 1800.0;
+let Tmax = 600.0;
 
 
 // IV. Others

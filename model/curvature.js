@@ -179,6 +179,11 @@ function curvature_tensor(pos, t, params){
   return [Kxx, Kyy, Kxy];
 }
 
+function meanCurvature(pos, t, params){
+  let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
+  return 0.5 * ((1.0+hx**2.0)*hyy + (1.0+hy**2.0)*hxx - 2.0*hx*hy*hxy) / (1.0+hx**2.0+hy**2.0)**1.5;
+}
+
 function gradCurvature(pos, t, params){
   let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
   let [g, gxx, gyy, gxy] = metric_tensor(pos, t, params);
@@ -201,12 +206,22 @@ function gradCurvature(pos, t, params){
 //  Vector normalization
 //-----------------------------------------------------------------
 
-function Normalize_Vec(vec){
-  if (vec.mag()<pow(10.0, -10)){
-    return createVector(0.0, 0.0);
-  } else {
-    return vec.normalize();
+function Normalize_Vec(vecs){
+
+  const isArray=Array.isArray(vecs);
+  const array_of_vectors=isArray ? vecs : [vecs];
+
+  let normalization_done=[];
+  for (let i=0; i<array_of_vectors.length; i++){
+
+    if (array_of_vectors[i].mag() < pow(10.0, -10)){
+      normalization_done.push(createVector(0.0, 0.0));
+    } else {
+      normalization_done.push(array_of_vectors[i].normalize());
+    }
   }
+
+  return isArray ? normalization_done : normalization_done[0];
 }
 
 

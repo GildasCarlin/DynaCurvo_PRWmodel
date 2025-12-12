@@ -13,10 +13,10 @@ class Cell {
   constructor(set_of_parameters, central_vel, i) {
     this.cellID = i; 
 
-    this.Px = set_of_parameters[0];
-    this.Py = set_of_parameters[1];
-    this.Sx = set_of_parameters[2];
-    this.Sy = set_of_parameters[3];
+    this.P2 = set_of_parameters[0];
+    this.P1 = set_of_parameters[1];
+    this.S2 = set_of_parameters[2];
+    this.S1 = set_of_parameters[3];
     this.alpha = set_of_parameters[4];
     this.q = set_of_parameters[10];
     this.tau_stat = set_of_parameters[7];
@@ -28,17 +28,20 @@ class Cell {
     this.central_V_flat = central_vel;
     
     this.inv_polarityMatrix = [
-      [1.0/this.Px, 0.0],
-      [0.0, 1.0/this.Py], 
+      [1.0/this.P1, 0.0],
+      [0.0, 1.0/this.P2], 
     ];
 
     this.diffusionMatrix = [ 
-      [this.Sx / Math.sqrt(this.Px), 0.0],
-      [0.0, this.Sy / Math.sqrt(this.Py)]
+      [this.S1 / Math.sqrt(this.P1), 0.0],
+      [0.0, this.S2 / Math.sqrt(this.P2)]
     ];
 
     this.beta = 0.0;
-    this.f = 0.0;
+    //WiP
+    this.f_mag=0.0;
+    //this.f_ang=0.0;
+    //this.f = createVector(Math.cos(this.f_ang), Math.sin(this.f_ang)).mult(this.f_mag);
 
     this.f_ext = createVector(0.0, 0.0);
     this.velocity = createVector(0.0, 0.0);
@@ -49,8 +52,11 @@ class Cell {
     this.cell_radius_max = 15.0;
 
     let [gradH, gradH_perp] = gradCurvature(this.position, 0.0, angleParams);    // local basis
-    this.theta=createVector(1.0, 0.0).angleBetween(gradH);
-    
+    this.k_angle=createVector(1.0, 0.0).angleBetween(gradH);
+
+    //test
+    this.V1=createVector(1.0, 1.0);
+    this.V2=this.V1.copy();
   }
   
   // Run simulation
@@ -71,20 +77,16 @@ class Cell {
   // ------------------------------------------------------------------------------------
   update(t){
 
+    this.Inferred_parameters_mapping(this.position, t);
+    //console.log(this.inv_polarityMatrix[0][0].toFixed(5), (1.0/this.P2).toFixed(5), (Math.sqrt(2)/(this.P2+this.P1)).toFixed(5));
+    //console.log(this.P1.toFixed(2), this.P2.toFixed(2))
+    // velocity is expressed in the global basis (x, y) -> it must be expressed in the local basis
+    //this.velocity=this.From_global_to_local(this.velocity, t);
+    
     //-------------------------------------------- external forces caused by curvature and dynamic wave
-    if (curvature_assumption){
-      this.f_ext = this.get_Psi_curvature(this.position.copy(), this.velocity.copy(), t);
-    } else {
-      this.f_ext = createVector(0.0, 0.0);
-    }
-
-    if (surf_assumption){
-      this.f_ext.add(this.get_Psi_wave(this.position.copy(), t));
-    }
-
-    // f_ext/velocity are expressed in the global basis (x, y) -> must be expressed in the local basis
-    this.f_ext=this.From_global_to_local(this.f_ext, t);
-    this.velocity=this.From_global_to_local(this.velocity, t);
+    this.f_ext = createVector(0.0, 0.0);
+    if (curvature_assumption) this.f_ext.add(this.get_Psi_curvature(this.position.copy(), this.velocity.copy(), t));
+    if (surf_assumption) this.f_ext.add(this.get_Psi_wave(this.position.copy(), t));
 
     //-------------------------------------------- velocity computation
     this.velocity = this.velocity.add(
@@ -95,10 +97,9 @@ class Cell {
       this.MultiplyMatrixWVector(this.diffusionMatrix, this.get_random_vector()).mult(Math.sqrt(dt))
     );
 
-
     //-------------------------------------------- velocity integration to get cell position
     // velocity has been expressed in the local basis (e1, e2) -> must be expressed in the global basis
-    this.velocity=this.From_local_to_global(this.velocity, t);
+    //this.velocity=this.From_local_to_global(this.velocity, t);
     this.position.add(this.velocity.copy().mult(dt));
   }
   
@@ -117,36 +118,57 @@ class Cell {
     return noise;
   }
 
-  get_Psi_curvature(pos, pol, t){
-    // init
-    let n = Normalize_Vec(pol);  // unit-length direction of migration
-    let u = n.x, v = n.y;        // coordinates
+  get_Psi_curvature(pos, vel, t){
+    // this function returns the contribution of f_ext caused by the static curvature. The formulation is discontinuous for the angle
 
-    // curvature
-    let [Kxx, Kyy, Kxy] = curvature_tensor(pos, t, angleParams);     //
-    let kappa = Kxx*u**2.0 + Kyy*v**2.0 + 2.0*Kxy*u*v;  // directional curvature
-    let [gradH, gradH_perp] = gradCurvature(pos, t, angleParams);    // local basis
-    
-    // direction of Psi if the cell is in concave
-    let Dtheta = 0.0;
-    if (kappa>0.0){
-      // is the cell polarized along +gradH_perp (True) or -gradH_perp (False) ?
-      let test = pol.dot(gradH_perp)<0.0;
-      if (test){
-        gradH_perp.mult(-1.0);
-      }
-      Dtheta = pol.angleBetween(gradH_perp) * this.alpha;
+    // 1. mesurements of the angle between e2 and the velocity
+    let theta=0.0;
+    if (meanCurvature(pos, t, angleParams)>=0.0){
+      // normalized local basis (e1, e2) 
+      //let [e1, e2]=Normalize_Vec(this.From_global_to_local(gradCurvature(pos, t, angleParams), t));
+      let [e1, e2]=Normalize_Vec(gradCurvature(pos, t, angleParams));
+
+      // is the cell polarized along +e2 (True) or -e2 (False) ?
+      if (vel.dot(e2)<0.0){
+        e2.mult(-1.0);
+      } 
+      theta=e2.angleBetween(vel);
     }
-
-    // norm of psi
-    let f_d = Math.abs(this.Vmean - this.central_V_flat);
-    this.f -= dt/this.tau_stat * (this.f-f_d);          // update f
     
-    let w = this.multiplyRotationMatrixVector(Dtheta, n);
-    return w.mult(this.f);
+    // 2. define the orientation of f_stat
+    let w=Normalize_Vec(vel.copy().rotate(-this.alpha*theta));
+
+    // 3. norm of psi
+    let f_d = 0.24*Math.exp(-lambda/19.8) + 0.02;               
+    this.f_mag -= dt/this.tau_stat * (this.f_mag-f_d);     
+    
+    return w.mult(this.f_mag);
+  }
+
+  getPsiStatic(pos, pol, t){
+    // not finished
+    // this function returns the contribution of f_ext caused by the static curvature. The formulation is continuous
+    if (meanCurvature(pos, t, angleParams)<0.0){
+      this.f=createVector(0.0, 0.0);
+    } else {                                
+      let [e1, e2] = gradCurvature(pos, t, angleParams);
+      let f_d = Math.abs(this.Vmean - this.central_V_flat);
+
+      // is the cell polarized along +e2 (True) or -e2 (False) ?
+      if (pol.dot(e2)<0.0){
+        e2.mult(-1.0);
+      }
+      let equilibrium=Normalize_Vec(e2).mult(f_d);
+
+      this.f_mag -= dt/this.tau_stat * (this.f_mag-f_d);          
+      this.f_ang -= dt/this.tau_stat * (this.f_ang-createVector(1.0, 0.0).angleBetween(equilibrium)); 
+      this.f=createVector(Math.cos(this.f_ang), Math.sin(this.f_ang)).mult(this.f_mag);
+   }
+   return this.f;
   }
 
   get_Psi_wave(pos, t){
+    //let W = this.From_global_to_local(phase_velocity(pos, t, angleParams), t);
     let W = phase_velocity(pos, t, angleParams);
     let Wspeed = W.mag();
 
@@ -158,34 +180,65 @@ class Cell {
   }
 
   get_Jacobian_Matrix(pos, t){
-    //let [Kxx, Kyy, Kxy]=curvature_tensor(pos, t);
-    //let jacobian = [
-    //  [Kxx, Kxy],
-    //  [Kxy, Kyy]
+    let [gradH, gradH_perp] = gradCurvature(pos, t, angleParams);
+
+    return [[0.0, 0.0], [0.0, gradH.mag()]];
+  }
+
+  Inferred_parameters_mapping(pos, t){
+    // local basis
+    let [e1, e2]=Normalize_Vec(gradCurvature(pos, t, angleParams));
+    // global basis
+    let [X, Y]=[createVector(1.0, 0.0), createVector(0.0, 1.0)];
+
+    let theta=e1.angleBetween(X);
+    //let Px=this.P1*Math.cos(theta)**2.0 + this.P2*Math.sin(theta)**2.0;
+    //let Py=this.P2*Math.cos(theta)**2.0 + this.P1*Math.sin(theta)**2.0;
+
+    //let Sx=this.S1*Math.cos(theta)**2.0 + this.S2*Math.sin(theta)**2.0;
+    //let Sy=this.S2*Math.cos(theta)**2.0 + this.S1*Math.sin(theta)**2.0;
+
+    //this.inv_polarityMatrix = [
+    //  [1.0/Px, 0.0],
+    //  [0.0, 1.0/Py], 
     //];
 
-    let [gradH, gradH_perp] = gradCurvature(pos, t, angleParams);
-    let norm=gradH.mag();
-    let sgn=Math.sign(gradH.dot(this.velocity));
-    //let theta=Math.abs(gradH.angleBetween(this.velocity));
-    //if (this.theta > Math.PI/2) {
-    //  this.theta = Math.PI - this.theta;
-    //}
-    //let jacobian = [
-    //  [norm*Math.sin(theta)*sgn, 0.0],
-    //  [0.0, norm*Math.cos(theta)*sgn]
+    //this.diffusionMatrix = [ 
+    //  [Sx / Math.sqrt(Px), 0.0],
+    //  [0.0, Sy / Math.sqrt(Py)]
     //];
-    let jacobian = [
-      [sgn*gradH.mag(), 0.0],
-      [0.0, 0.0]
+
+    let Px=1.0/this.P1*Math.cos(theta)**2.0 + 1.0/this.P2*Math.sin(theta)**2.0;
+    let Py=1.0/this.P2*Math.cos(theta)**2.0 + 1.0/this.P1*Math.sin(theta)**2.0;
+    this.inv_polarityMatrix = [
+      [Px, 0.0],
+      [0.0, Py], 
     ];
-    //console.log(Math.sin(theta), Math.cos(theta));
-    return jacobian;
+
+    let Sx=this.S1/Math.sqrt(this.P1)*Math.cos(theta)**2.0 + this.S2/Math.sqrt(this.P2)*Math.sin(theta)**2.0;
+    let Sy=this.S2/Math.sqrt(this.P2)*Math.cos(theta)**2.0 + this.S1/Math.sqrt(this.P1)*Math.sin(theta)**2.0;
+
+    this.diffusionMatrix = [ 
+      [Sx, 0.0],
+      [0.0, Sy]
+    ];
+
   }
 
   MultiplyMatrixWVector(A, v){
-    return createVector(A[0][0]*v.x + A[0][1]*v.y, A[1][0]*v.x + A[1][1]*v.y);
+    let v1=v.x, v2=v.y;
+    return createVector(A[0][0]*v1 + A[0][1]*v2, A[1][0]*v1 + A[1][1]*v2);
   }
+
+  DoubleDotProduct(matrixA, matrixB) {
+  let sum = 0.;
+  for (let i = 0; i < 2; i++) {
+    for (let j = 0; j < 2; j++) {
+      sum += matrixA[i][j] * matrixB[i][j];
+    }
+  }
+  return sum;
+}
 
   Heaviside_step_function(s){
     if (s<=0.0){
@@ -195,33 +248,46 @@ class Cell {
     }
   }
 
-  From_global_to_local(vec, t){
-    // take as input a vector expressed in the global static base (x, y) and returns the same vector expressed in the local basis (e1, e2) 
+  From_global_to_local(vecs, t){
+    // take as input: a vector or an array of vectors expressed in the global static base (x, y)
+    // returns: the same vector(s) expressed in the local basis (e1, e2) 
+
+    const isArray = Array.isArray(vecs);
+    const array_of_vectors = isArray ? vecs : [vecs];  // if vecs is a single vector in argument, it is stored in an array
+    
     let [e1, e2]=gradCurvature(this.position, t, angleParams);
     let theta=createVector(1.0, 0.0).angleBetween(e1);
-
     let c = Math.cos(theta), s = Math.sin(theta);
-    let vx=vec.x, vy=vec.y;
+    
+    let rotation_done=[];
+    for (let i=0; i<array_of_vectors.length; i++){
+      let vx=array_of_vectors[i].x, vy=array_of_vectors[i].y;
+      rotation_done.push(createVector(c*vx + s*vy, -s*vx + c*vy));
+    }
 
-    return createVector(c*vx + s*vy, -s*vx + c*vy);
+    return isArray ? rotation_done : rotation_done[0];
   }
 
-  From_local_to_global(vec, t){
-    // take as input a vector expressed in the local basis (e1, e2) and returns the same vector expressed in the global static base (x, y) 
+  From_local_to_global(vecs, t){
+    // take as input: a vector or an array of vectors expressed in the local basis (e1, e2)
+    // returns: the same vector(s) expressed in the global static base (x, y) 
+
+    const isArray = Array.isArray(vecs);
+    const array_of_vectors = isArray ? vecs : [vecs];  // if vecs is a single vector in argument, it is stored in an array
+    
     let [e1, e2]=gradCurvature(this.position, t, angleParams);
     let theta=createVector(1.0, 0.0).angleBetween(e1);
-
     let c = Math.cos(theta), s = Math.sin(theta);
-    let vx=vec.x, vy=vec.y;
+    
+    let rotation_done=[];
+    for (let i=0; i<array_of_vectors.length; i++){
+      let vx=array_of_vectors[i].x, vy=array_of_vectors[i].y;
+      rotation_done.push(createVector(c*vx - s*vy, s*vx + c*vy));
+    }
 
-    return createVector(c*vx - s*vy, s*vx + c*vy);
+    return isArray ? rotation_done : rotation_done[0];
   }
-
-  multiplyRotationMatrixVector(angle, v) {
-    let c = Math.cos(angle), s = Math.sin(angle);
-    let x = v.x, y = v.y;
-    return createVector(c*x - s*y, s*x + c*y);
-  }
+ 
 
   // 3.sketch
   render(pos, vel){
@@ -249,7 +315,7 @@ class Cell {
     translate(x, y);
     rotate(createVector(1.0, 0.0).angleBetween(vel));
 
-    let a = this.cell_radius_min + this.cell_radius_max*(1.0-exp(-vel.mag()/(0.5*(this.Sx+this.Sy))));
+    let a = this.cell_radius_min + this.cell_radius_max*(1.0-exp(-vel.mag()/(0.5*(this.S1+this.S2))));
     let b = 0.5*a;
     if (b<this.cell_radius_min){
       b = this.cell_radius_min;
@@ -285,7 +351,7 @@ class Cell {
   }
   
   sauvegarde(t){
-    table_data.push(`${it_sauv}, ${t}, ${this.cellID}, ${this.position.x}, ${this.position.y}, ${this.theta}`);
+    table_data.push(`${it_sauv}, ${t}, ${this.cellID}, ${this.position.x}, ${this.position.y}, ${this.k_angle}`);
   }
   
 }

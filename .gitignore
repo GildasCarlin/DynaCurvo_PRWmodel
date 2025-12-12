@@ -1,0 +1,10 @@
+.venv/
+.env/
+.vscode/
+
+post/dyna/assets/
+post/static/assets/
+
+deprecated/
+
+*.svg
