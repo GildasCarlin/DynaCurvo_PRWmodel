@@ -35,35 +35,35 @@ fig1 = plt.figure(num='role_of_q', figsize=(Largeur, Hauteur), constrained_layou
 gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
 
 ## axes pour scatter les trajectoires
-ax_traj1 = fig1.add_subplot(gs1[0, 0])
-ax_traj2 = fig1.add_subplot(gs1[0, 1])
+ax1 = fig1.add_subplot(gs1[0, 0])
+ax2 = fig1.add_subplot(gs1[0, 1])
 
 ## axes pour les statistiques
-ax1 = fig1.add_subplot(gs1[1, 0])
-ax2 = fig1.add_subplot(gs1[1, 1])
+ax4 = fig1.add_subplot(gs1[1, 0])
+ax5 = fig1.add_subplot(gs1[1, 1])
 ax3 = fig1.add_subplot(gs1[0, 2])
-ax4 = fig1.add_subplot(gs1[1, 2])
-ax5 = fig1.add_subplot(gs1[2, 0])
-ax6 = fig1.add_subplot(gs1[2, 1])
-ax7 = fig1.add_subplot(gs1[2, 2])
+ax6 = fig1.add_subplot(gs1[1, 2])
+ax7 = fig1.add_subplot(gs1[2, 0])
+ax8 = fig1.add_subplot(gs1[2, 1])
+ax9 = fig1.add_subplot(gs1[2, 2])
 
-ax_ins1 = inset_axes(ax2, width=Largeur_ins, height=Hauteur_ins)
-ax_ins5 = inset_axes(ax5, width=Largeur_ins, height=Hauteur_ins)
+#ax_ins1 = inset_axes(ax2, width=Largeur_ins, height=Hauteur_ins)
+#ax_ins5 = inset_axes(ax5, width=Largeur_ins, height=Hauteur_ins)
 
 ## add labels
 def add_label(ax, txt, x=-0.05, y=1.1):
     ax.text(x, y, txt, transform=ax.transAxes, fontsize=20, fontweight='bold', va='top', ha='right')
 #
 
-add_label(ax_traj1, 'A')
-add_label(ax_traj2, 'B')
-add_label(ax1, 'C')
-add_label(ax2, 'D')
-add_label(ax3, 'E')
-add_label(ax4, 'F')
-add_label(ax5, 'G')
-add_label(ax6, 'H')
-add_label(ax7, 'I')
+#add_label(ax_traj1, 'A')
+#add_label(ax_traj2, 'B')
+#add_label(ax1, 'C')
+#add_label(ax2, 'D')
+#add_label(ax3, 'E')
+#add_label(ax4, 'F')
+#add_label(ax5, 'G')
+#add_label(ax6, 'H')
+#add_label(ax7, 'I')
 
 ## font size
 plt.rcParams.update({'font.size': 50})
@@ -150,6 +150,8 @@ def plot_traj(metadata, data, N, ax, xticks, yticks):
                     edgecolor='none'
                     )
     #
+
+    ax.text(0.12, 0.55, path[len(substrate_regime)+len(study)+len("assets")+3:-1-len("data.txt")], transform=ax.transAxes, fontsize=20)
     
     ax.get_legend().set_visible(False)
     ax.set_xlabel('x (mm)', fontsize=22)
@@ -311,7 +313,7 @@ def plot_critical(data, y, param, r2, ax, palette, plot_legend=False, xticks = [
 must_be_int = ['Surface Index', 'Number of Cells']
 
 substrate_regime="dyna"
-study="Rotation_de_PS"
+study="PBSB_desactiver_des_truc"
 
 
 
@@ -320,8 +322,8 @@ study="Rotation_de_PS"
 xticks = [-2., 0., 2.]
 yticks = [-0.5, 0., 3.5]
 
-mapping_traj={1:ax_traj1, 2:ax_traj2, 3:ax3, 4:ax4, 5:ax5}
-Nb_to_plot=30
+mapping_traj={1:ax1, 2:ax2, 3:ax3, 4:ax4, 5:ax5, 6:ax6, 7:ax7, 8:ax8}
+Nb_to_plot=100
 
 
 ################### compute r2 score
