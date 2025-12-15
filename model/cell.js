@@ -192,37 +192,51 @@ class Cell {
     let [X, Y]=[createVector(1.0, 0.0), createVector(0.0, 1.0)];
 
     let theta=e1.angleBetween(X);
-    //let Px=this.P1*Math.cos(theta)**2.0 + this.P2*Math.sin(theta)**2.0;
-    //let Py=this.P2*Math.cos(theta)**2.0 + this.P1*Math.sin(theta)**2.0;
 
-    //let Sx=this.S1*Math.cos(theta)**2.0 + this.S2*Math.sin(theta)**2.0;
-    //let Sy=this.S2*Math.cos(theta)**2.0 + this.S1*Math.sin(theta)**2.0;
+    // persistence matrix (from local basis P1, P2 to global basis Pxx, Pxy, Pyy)
+    let Pxx=1.0/this.P1*Math.cos(theta)**2.0 + 1.0/this.P2*Math.sin(theta)**2.0;
+    let Pyy=1.0/this.P2*Math.cos(theta)**2.0 + 1.0/this.P1*Math.sin(theta)**2.0;
+    let Pxy=Math.abs(1.0/this.P1-1.0/this.P2)*Math.cos(theta)*Math.sin(theta);
 
-    //this.inv_polarityMatrix = [
-    //  [1.0/Px, 0.0],
-    //  [0.0, 1.0/Py], 
-    //];
-
-    //this.diffusionMatrix = [ 
-    //  [Sx / Math.sqrt(Px), 0.0],
-    //  [0.0, Sy / Math.sqrt(Py)]
-    //];
-
-    let Px=1.0/this.P1*Math.cos(theta)**2.0 + 1.0/this.P2*Math.sin(theta)**2.0;
-    let Py=1.0/this.P2*Math.cos(theta)**2.0 + 1.0/this.P1*Math.sin(theta)**2.0;
     this.inv_polarityMatrix = [
-      [Px, 0.0],
-      [0.0, Py], 
+      [Pxx, Pxy],
+      [Pxy, Pyy], 
     ];
 
-    let Sx=this.S1/Math.sqrt(this.P1)*Math.cos(theta)**2.0 + this.S2/Math.sqrt(this.P2)*Math.sin(theta)**2.0;
-    let Sy=this.S2/Math.sqrt(this.P2)*Math.cos(theta)**2.0 + this.S1/Math.sqrt(this.P1)*Math.sin(theta)**2.0;
+    // diffusion matrix
 
+    /*
+    let SxxA=this.S1/Math.sqrt(this.P1)*Math.cos(theta)**2.0 + this.S2/Math.sqrt(this.P2)*Math.sin(theta)**2.0;
+    let SyyA=this.S2/Math.sqrt(this.P2)*Math.cos(theta)**2.0 + this.S1/Math.sqrt(this.P1)*Math.sin(theta)**2.0;
+    let SxyA=Math.abs(this.S1/Math.sqrt(this.P1) - this.S2/Math.sqrt(this.P2)) * Math.cos(theta)*Math.sin(theta);
     this.diffusionMatrix = [ 
-      [Sx, 0.0],
-      [0.0, Sy]
+      [SxxA, SxyA],
+      [SxyA, SyyA]
     ];
 
+    let PxxB=this.P1*Math.cos(theta)**2.0 + this.P2*Math.sin(theta)**2.0;
+    let PyyB=this.P2*Math.cos(theta)**2.0 + this.P1*Math.sin(theta)**2.0;
+    let PxyB=Math.abs(this.P1-this.P2)*Math.cos(theta)*Math.sin(theta);
+    let SxxB=this.S1*Math.cos(theta)**2.0 + this.S2*Math.sin(theta)**2.0;
+    let SyyB=this.S2*Math.cos(theta)**2.0 + this.S1*Math.sin(theta)**2.0;
+    let SxyB=Math.abs(this.S1-this.S2)*Math.cos(theta)*Math.sin(theta);
+    this.diffusionMatrix = [ 
+      [SxxB/Math.sqrt(PxxB), SxyB/Math.sqrt(PxyB)],
+      [SxyB/Math.sqrt(PxyB), SyyB/Math.sqrt(PyyB)]
+    ];
+    */
+
+    let PxxC=1.0/Math.sqrt(this.P1)*Math.cos(theta)**2.0 + 1.0/Math.sqrt(this.P2)*Math.sin(theta)**2.0;
+    let PyyC=1.0/Math.sqrt(this.P2)*Math.cos(theta)**2.0 + 1.0/Math.sqrt(this.P1)*Math.sin(theta)**2.0;
+    let PxyC=Math.abs(1.0/Math.sqrt(this.P1) - 1.0/Math.sqrt(this.P2)) * Math.cos(theta)*Math.sin(theta);
+
+    let SxxC=this.S1*Math.cos(theta)**2.0 + this.S2*Math.sin(theta)**2.0;
+    let SyyC=this.S2*Math.cos(theta)**2.0 + this.S1*Math.sin(theta)**2.0;
+    let SxyC=Math.abs(this.S1-this.S2)*Math.cos(theta)*Math.sin(theta);
+    this.diffusionMatrix = [ 
+      [SxxC*PxxC + SxyC*PxyC, SxxC*PxyC + SxyC*PyyC],
+      [SxyC*PxxC + SyyC*PxyC, SxyC*PxyC + SyyC*PyyC]
+    ];
   }
 
   MultiplyMatrixWVector(A, v){

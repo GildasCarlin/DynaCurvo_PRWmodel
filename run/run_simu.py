@@ -35,7 +35,7 @@ def search_files_to_analyse(root):
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="Cache_Browser_tests"
+study="checkCache"
 
 # exported file (at the end of the simulation)
 home=os.path.expanduser("~")
@@ -53,7 +53,7 @@ path_to_assets=os.path.join("..", "post", substrate_regime, "assets", study)
 
 # assumption    cell_is_surfer (true) /  cell_is_not_surfer (false)
 W_assumption = r"true"
-K_assumption = r"false"
+K_assumption = r"true"
 
 
 # ================================================================================================================

@@ -313,7 +313,7 @@ def plot_critical(data, y, param, r2, ax, palette, plot_legend=False, xticks = [
 must_be_int = ['Surface Index', 'Number of Cells']
 
 substrate_regime="dyna"
-study="PBSB_desactiver_des_truc"
+study="nonDiagonal_rotation"
 
 
 
@@ -323,7 +323,7 @@ xticks = [-2., 0., 2.]
 yticks = [-0.5, 0., 3.5]
 
 mapping_traj={1:ax1, 2:ax2, 3:ax3, 4:ax4, 5:ax5, 6:ax6, 7:ax7, 8:ax8}
-Nb_to_plot=100
+Nb_to_plot=200
 
 
 ################### compute r2 score
