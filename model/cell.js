@@ -90,7 +90,7 @@ class Cell {
 
     //-------------------------------------------- velocity computation
     this.velocity = this.velocity.add(
-      this.MultiplyMatrixWVector(this.get_Jacobian_Matrix(this.position.copy(), t), this.velocity.copy()).mult(dt*this.q)
+      this.MultiplyMatrixWVector(this.get_Jacobian_Matrix(this.position.copy(), t), this.velocity.copy()).mult(0.0*dt*this.q)
     ).sub(
       this.MultiplyMatrixWVector(this.inv_polarityMatrix, this.velocity.copy().sub(this.f_ext.copy())).mult(dt)
     ).add(
@@ -180,9 +180,19 @@ class Cell {
   }
 
   get_Jacobian_Matrix(pos, t){
-    let [gradH, gradH_perp] = gradCurvature(pos, t, angleParams);
+    // local basis
+    let [gradH, gradH_perp]=gradCurvature(pos, t, angleParams);
+    // global basis
+    let [X, Y]=[createVector(1.0, 0.0), createVector(0.0, 1.0)];
 
-    return [[0.0, 0.0], [0.0, gradH.mag()]];
+    let theta=gradH.angleBetween(X);
+
+    let curv=gradH.mag();
+    let Mxx=curv*Math.cos(theta)**2.0;
+    let Myy=curv*Math.sin(theta)**2.0;
+    let Mxy=Math.abs(curv)*Math.cos(theta)*Math.sin(theta);
+
+    return [[Mxx, Mxy], [Mxy, Myy]];
   }
 
   Inferred_parameters_mapping(pos, t){
@@ -204,7 +214,6 @@ class Cell {
     ];
 
     // diffusion matrix
-
     /*
     let SxxA=this.S1/Math.sqrt(this.P1)*Math.cos(theta)**2.0 + this.S2/Math.sqrt(this.P2)*Math.sin(theta)**2.0;
     let SyyA=this.S2/Math.sqrt(this.P2)*Math.cos(theta)**2.0 + this.S1/Math.sqrt(this.P1)*Math.sin(theta)**2.0;
@@ -213,7 +222,9 @@ class Cell {
       [SxxA, SxyA],
       [SxyA, SyyA]
     ];
+    */
 
+    /*
     let PxxB=this.P1*Math.cos(theta)**2.0 + this.P2*Math.sin(theta)**2.0;
     let PyyB=this.P2*Math.cos(theta)**2.0 + this.P1*Math.sin(theta)**2.0;
     let PxyB=Math.abs(this.P1-this.P2)*Math.cos(theta)*Math.sin(theta);
@@ -225,6 +236,7 @@ class Cell {
       [SxyB/Math.sqrt(PxyB), SyyB/Math.sqrt(PyyB)]
     ];
     */
+    
 
     let PxxC=1.0/Math.sqrt(this.P1)*Math.cos(theta)**2.0 + 1.0/Math.sqrt(this.P2)*Math.sin(theta)**2.0;
     let PyyC=1.0/Math.sqrt(this.P2)*Math.cos(theta)**2.0 + 1.0/Math.sqrt(this.P1)*Math.sin(theta)**2.0;
@@ -237,6 +249,7 @@ class Cell {
       [SxxC*PxxC + SxyC*PxyC, SxxC*PxyC + SxyC*PyyC],
       [SxyC*PxxC + SyyC*PxyC, SxyC*PxyC + SyyC*PyyC]
     ];
+    
   }
 
   MultiplyMatrixWVector(A, v){
