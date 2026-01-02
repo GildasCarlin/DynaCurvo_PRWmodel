@@ -44,8 +44,10 @@ class Cell {
     //this.f = createVector(Math.cos(this.f_ang), Math.sin(this.f_ang)).mult(this.f_mag);
 
     this.f_ext = createVector(0.0, 0.0);
-    this.velocity = createVector(0.0, 0.0);
+    this.velocity = createVector(0.01*Math.random()-0.005, 0.01*Math.random()-0.005);
+    //this.velocity = createVector(0.0, 0.0);
     this.position = createVector(400.0 * Math.random() - 200.0, 400.0 * Math.random() - 200.0);
+    //this.position = createVector(0.0, 0.0);
 
     // cell shape (visual only)
     this.cell_radius_min = 10.0;  
@@ -77,29 +79,43 @@ class Cell {
   // ------------------------------------------------------------------------------------
   update(t){
 
+    // Polarity matrix and Diffusion matrix are updated
     this.Inferred_parameters_mapping(this.position, t);
-    //console.log(this.inv_polarityMatrix[0][0].toFixed(5), (1.0/this.P2).toFixed(5), (Math.sqrt(2)/(this.P2+this.P1)).toFixed(5));
-    //console.log(this.P1.toFixed(2), this.P2.toFixed(2))
-    // velocity is expressed in the global basis (x, y) -> it must be expressed in the local basis
-    //this.velocity=this.From_global_to_local(this.velocity, t);
     
     //-------------------------------------------- external forces caused by curvature and dynamic wave
     this.f_ext = createVector(0.0, 0.0);
     if (curvature_assumption) this.f_ext.add(this.get_Psi_curvature(this.position.copy(), this.velocity.copy(), t));
     if (surf_assumption) this.f_ext.add(this.get_Psi_wave(this.position.copy(), t));
 
+    //let test=this.f_ext.copy();
+    //test=this.From_local_to_global(test, t);
+    //drawVector(this.position.x, this.position.y, test.copy().mult(10000), 'red');
     //-------------------------------------------- velocity computation
+    
+    let DfDr_dot_v=this.MultiplyMatrixWVector(this.get_Jacobian_Matrix(this.position.copy(), t), this.From_global_to_local(this.velocity.copy(), t));
+    DfDr_dot_v=this.From_local_to_global(DfDr_dot_v,t);
+    //drawVector(this.position.x, this.position.y, DfDr_dot_v.copy().mult(10000.0), 'red');
+
+    let Pers_dot_pol=this.MultiplyMatrixWVector(this.inv_polarityMatrix, this.From_global_to_local(this.velocity.copy(), t).sub(this.f_ext.copy()));
+    Pers_dot_pol=this.From_local_to_global(Pers_dot_pol,t);
+
     this.velocity = this.velocity.add(
-      this.MultiplyMatrixWVector(this.get_Jacobian_Matrix(this.position.copy(), t), this.velocity.copy()).mult(dt*this.q)
+      DfDr_dot_v.mult(0.0*dt*this.q)
     ).sub(
-      this.MultiplyMatrixWVector(this.inv_polarityMatrix, this.velocity.copy().sub(this.f_ext.copy())).mult(dt)
+      Pers_dot_pol.mult(dt)
     ).add(
       this.MultiplyMatrixWVector(this.diffusionMatrix, this.get_random_vector()).mult(Math.sqrt(dt))
     );
+    //this.velocity=this.From_local_to_global(this.velocity, t);
+    //this.velocity = this.velocity.add(
+    //  this.MultiplyMatrixWVector(this.get_Jacobian_Matrix(this.position.copy(), t), this.velocity.copy()).mult(dt*this.q)
+    //).sub(
+    //  this.MultiplyMatrixWVector(this.inv_polarityMatrix, this.velocity.copy().sub(this.f_ext.copy())).mult(dt)
+    //).add(
+    //  this.MultiplyMatrixWVector(this.diffusionMatrix, this.get_random_vector()).mult(Math.sqrt(dt))
+    //);
 
     //-------------------------------------------- velocity integration to get cell position
-    // velocity has been expressed in the local basis (e1, e2) -> must be expressed in the global basis
-    //this.velocity=this.From_local_to_global(this.velocity, t);
     this.position.add(this.velocity.copy().mult(dt));
   }
   
@@ -121,12 +137,13 @@ class Cell {
   get_Psi_curvature(pos, vel, t){
     // this function returns the contribution of f_ext caused by the static curvature. The formulation is discontinuous for the angle
 
+    vel=this.From_global_to_local(vel.copy(),t);
     // 1. mesurements of the angle between e2 and the velocity
     let theta=0.0;
     if (meanCurvature(pos, t, angleParams)>=0.0){
       // normalized local basis (e1, e2) 
-      //let [e1, e2]=Normalize_Vec(this.From_global_to_local(gradCurvature(pos, t, angleParams), t));
-      let [e1, e2]=Normalize_Vec(gradCurvature(pos, t, angleParams));
+      let [e1, e2]=Normalize_Vec(this.From_global_to_local(gradCurvature(pos, t, angleParams), t));
+      //let [e1, e2]=Normalize_Vec(gradCurvature(pos, t, angleParams));
 
       // is the cell polarized along +e2 (True) or -e2 (False) ?
       if (vel.dot(e2)<0.0){
@@ -168,8 +185,8 @@ class Cell {
   }
 
   get_Psi_wave(pos, t){
-    //let W = this.From_global_to_local(phase_velocity(pos, t, angleParams), t);
-    let W = phase_velocity(pos, t, angleParams);
+    let W = this.From_global_to_local(phase_velocity(pos, t, angleParams), t);
+    //let W = phase_velocity(pos, t, angleParams);
     let Wspeed = W.mag();
 
     // target velocity
@@ -180,63 +197,71 @@ class Cell {
   }
 
   get_Jacobian_Matrix(pos, t){
-    let [gradH, gradH_perp] = gradCurvature(pos, t, angleParams);
+    // local basis
+    let [gradH, gradH_perp]=gradCurvature(pos, t, angleParams);
+    // global basis
+    //let [X, Y]=[createVector(1.0, 0.0), createVector(0.0, 1.0)];
 
-    return [[0.0, 0.0], [0.0, gradH.mag()]];
+    // base locale
+    let sgn=Math.sign(gradH.dot(this.velocity));
+    let Mxx=gradH.mag() * sgn;
+    let Myy=0.0;
+    let Mxy=0.0;
+
+    //let theta=gradH.angleBetween(X);
+    //let sgn=Math.sign(gradH.dot(this.velocity));
+    ////let sgn=Math.sign(gradH.y);
+    //let curv=gradH.mag();
+    //let Mxx=sgn*curv*Math.cos(theta)**2.0;
+    //let Myy=sgn*curv*Math.sin(theta)**2.0;
+    //let Mxy=sgn*Math.abs(curv)*Math.cos(theta)*Math.sin(theta);
+  
+    //let Mxx=gradH.x;
+    //let Myy=gradH.y;
+    //let Mxy=0.0;
+
+    //let e1=Normalize_Vec(gradH.copy());
+    //let Mxx=-gradH.x * e1.y;
+    //let Myy=gradH.y * e1.x;
+    //let Mxy=-gradH.y * e1.y;
+    //let Myx=gradH.x * e1.x;
+
+    //let Mxx=gradH.x*Math.sin(theta)**2.0 + gradH.y*Math.cos(theta)**2.0;
+    //let Myy=gradH.x*Math.cos(theta)**2.0 + gradH.y*Math.sin(theta)**2.0;
+    //let Mxy=Math.abs(gradH.x-gradH.y)*Math.cos(theta)*gradH.y*Math.sin(theta);
+
+    return [[Mxx, Mxy], [Mxy, Myy]];
+    //return [[Mxy, Myy], [-Mxx, -Mxy]];
   }
 
   Inferred_parameters_mapping(pos, t){
-    // local basis
+    // local basis expressed in global basis
     let [e1, e2]=Normalize_Vec(gradCurvature(pos, t, angleParams));
-    // global basis
-    let [X, Y]=[createVector(1.0, 0.0), createVector(0.0, 1.0)];
 
-    let theta=e1.angleBetween(X);
+    // U : matrice de changement de base de local à global
+    // Soit D une matrice 2x2 diagonale exprimée en base locale, alors D en base globale est donné par,
+    // D(globale) = U.D(locale).U^T
+    let U=[[e1.x, e2.x],
+           [e1.y, e2.y]]
 
     // persistence matrix (from local basis P1, P2 to global basis Pxx, Pxy, Pyy)
-    let Pxx=1.0/this.P1*Math.cos(theta)**2.0 + 1.0/this.P2*Math.sin(theta)**2.0;
-    let Pyy=1.0/this.P2*Math.cos(theta)**2.0 + 1.0/this.P1*Math.sin(theta)**2.0;
-    let Pxy=Math.abs(1.0/this.P1-1.0/this.P2)*Math.cos(theta)*Math.sin(theta);
-
+    let Pxx=1.0/this.P1*(U[0][0])**2.0 + 1.0/this.P2*(U[0][1])**2.0;
+    let Pyy=1.0/this.P1*(U[1][0])**2.0 + 1.0/this.P2*(U[1][1])**2.0;
+    let Pxy=1.0/this.P1*U[0][0]*U[1][0] + 1.0/this.P2*U[0][1]*U[1][1];
     this.inv_polarityMatrix = [
       [Pxx, Pxy],
       [Pxy, Pyy], 
     ];
 
     // diffusion matrix
-
-    /*
-    let SxxA=this.S1/Math.sqrt(this.P1)*Math.cos(theta)**2.0 + this.S2/Math.sqrt(this.P2)*Math.sin(theta)**2.0;
-    let SyyA=this.S2/Math.sqrt(this.P2)*Math.cos(theta)**2.0 + this.S1/Math.sqrt(this.P1)*Math.sin(theta)**2.0;
-    let SxyA=Math.abs(this.S1/Math.sqrt(this.P1) - this.S2/Math.sqrt(this.P2)) * Math.cos(theta)*Math.sin(theta);
-    this.diffusionMatrix = [ 
-      [SxxA, SxyA],
-      [SxyA, SyyA]
+    let Sxx=this.S1/Math.sqrt(this.P1)*U[0][0]**2.0 + this.S2/Math.sqrt(this.P2)*U[0][1]**2.0;
+    let Syy=this.S1/Math.sqrt(this.P1)*U[1][0]**2.0 + this.S2/Math.sqrt(this.P2)*U[1][1]**2.0;
+    let Sxy=this.S1/Math.sqrt(this.P1)*U[0][0]*U[1][0] + this.S2/Math.sqrt(this.P2)*U[0][1]*U[1][1];
+    this.inv_polarityMatrix = [
+      [Sxx, Sxy],
+      [Sxy, Syy], 
     ];
 
-    let PxxB=this.P1*Math.cos(theta)**2.0 + this.P2*Math.sin(theta)**2.0;
-    let PyyB=this.P2*Math.cos(theta)**2.0 + this.P1*Math.sin(theta)**2.0;
-    let PxyB=Math.abs(this.P1-this.P2)*Math.cos(theta)*Math.sin(theta);
-    let SxxB=this.S1*Math.cos(theta)**2.0 + this.S2*Math.sin(theta)**2.0;
-    let SyyB=this.S2*Math.cos(theta)**2.0 + this.S1*Math.sin(theta)**2.0;
-    let SxyB=Math.abs(this.S1-this.S2)*Math.cos(theta)*Math.sin(theta);
-    this.diffusionMatrix = [ 
-      [SxxB/Math.sqrt(PxxB), SxyB/Math.sqrt(PxyB)],
-      [SxyB/Math.sqrt(PxyB), SyyB/Math.sqrt(PyyB)]
-    ];
-    */
-
-    let PxxC=1.0/Math.sqrt(this.P1)*Math.cos(theta)**2.0 + 1.0/Math.sqrt(this.P2)*Math.sin(theta)**2.0;
-    let PyyC=1.0/Math.sqrt(this.P2)*Math.cos(theta)**2.0 + 1.0/Math.sqrt(this.P1)*Math.sin(theta)**2.0;
-    let PxyC=Math.abs(1.0/Math.sqrt(this.P1) - 1.0/Math.sqrt(this.P2)) * Math.cos(theta)*Math.sin(theta);
-
-    let SxxC=this.S1*Math.cos(theta)**2.0 + this.S2*Math.sin(theta)**2.0;
-    let SyyC=this.S2*Math.cos(theta)**2.0 + this.S1*Math.sin(theta)**2.0;
-    let SxyC=Math.abs(this.S1-this.S2)*Math.cos(theta)*Math.sin(theta);
-    this.diffusionMatrix = [ 
-      [SxxC*PxxC + SxyC*PxyC, SxxC*PxyC + SxyC*PyyC],
-      [SxyC*PxxC + SyyC*PxyC, SxyC*PxyC + SyyC*PyyC]
-    ];
   }
 
   MultiplyMatrixWVector(A, v){
