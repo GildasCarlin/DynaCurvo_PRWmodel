@@ -27,14 +27,24 @@ class Cell {
     this.Vmax = set_of_parameters[9];
     this.central_V_flat = central_vel;
     
-    this.inv_polarityMatrix = [
+    this.Local_Persistence_Matrix = [
       [1.0/this.P1, 0.0],
       [0.0, 1.0/this.P2], 
     ];
 
-    this.diffusionMatrix = [ 
+    this.Local_Diffusion_Matrix = [ 
       [this.S1 / Math.sqrt(this.P1), 0.0],
       [0.0, this.S2 / Math.sqrt(this.P2)]
+    ];
+
+    this.Global_Persistence_Matrix = [
+      [0.0, 0.0],
+      [0.0, 0.0], 
+    ];
+
+    this.Global_Diffusion_Matrix = [ 
+      [0.0, 0.0],
+      [0.0, 0.0]
     ];
 
     this.beta = 0.0;
@@ -44,8 +54,8 @@ class Cell {
     //this.f = createVector(Math.cos(this.f_ang), Math.sin(this.f_ang)).mult(this.f_mag);
 
     this.f_ext = createVector(0.0, 0.0);
-    this.velocity = createVector(0.01*Math.random()-0.005, 0.01*Math.random()-0.005);
-    //this.velocity = createVector(0.0, 0.0);
+    //this.velocity = createVector(0.01*Math.random()-0.005, 0.01*Math.random()-0.005);
+    this.velocity = createVector(0.0, 0.0);
     this.position = createVector(400.0 * Math.random() - 200.0, 400.0 * Math.random() - 200.0);
     //this.position = createVector(0.0, 0.0);
 
@@ -79,41 +89,22 @@ class Cell {
   // ------------------------------------------------------------------------------------
   update(t){
 
-    // Polarity matrix and Diffusion matrix are updated
-    this.Inferred_parameters_mapping(this.position, t);
+    //-------------------------------------------- Polarity matrix and Diffusion matrix are updated in the global basis
+    this.InferredParametersGlobalMapping(this.position, t);
     
     //-------------------------------------------- external forces caused by curvature and dynamic wave
     this.f_ext = createVector(0.0, 0.0);
-    if (curvature_assumption) this.f_ext.add(this.get_Psi_curvature(this.position.copy(), this.velocity.copy(), t));
-    if (surf_assumption) this.f_ext.add(this.get_Psi_wave(this.position.copy(), t));
+    if (curv_assumption) this.f_ext.add(this.getPsiCurv(this.position, this.velocity.copy(), t));
+    if (surf_assumption) this.f_ext.add(this.getPsiWave(this.position, t));
 
-    //let test=this.f_ext.copy();
-    //test=this.From_local_to_global(test, t);
-    //drawVector(this.position.x, this.position.y, test.copy().mult(10000), 'red');
     //-------------------------------------------- velocity computation
-    
-    let DfDr_dot_v=this.MultiplyMatrixWVector(this.get_Jacobian_Matrix(this.position.copy(), t), this.From_global_to_local(this.velocity.copy(), t));
-    DfDr_dot_v=this.From_local_to_global(DfDr_dot_v,t);
-    //drawVector(this.position.x, this.position.y, DfDr_dot_v.copy().mult(10000.0), 'red');
-
-    let Pers_dot_pol=this.MultiplyMatrixWVector(this.inv_polarityMatrix, this.From_global_to_local(this.velocity.copy(), t).sub(this.f_ext.copy()));
-    Pers_dot_pol=this.From_local_to_global(Pers_dot_pol,t);
-
     this.velocity = this.velocity.add(
-      DfDr_dot_v.mult(0.0*dt*this.q)
+      MatrixVectorProduct(this.get_Jacobian_Matrix(this.position, t), this.velocity).mult(dt*this.q)
     ).sub(
-      Pers_dot_pol.mult(dt)
+      MatrixVectorProduct(this.Global_Persistence_Matrix, this.velocity.copy().sub(this.f_ext)).mult(dt)
     ).add(
-      this.MultiplyMatrixWVector(this.diffusionMatrix, this.get_random_vector()).mult(Math.sqrt(dt))
+      MatrixVectorProduct(this.Global_Diffusion_Matrix, getRandomVector()).mult(Math.sqrt(dt))
     );
-    //this.velocity=this.From_local_to_global(this.velocity, t);
-    //this.velocity = this.velocity.add(
-    //  this.MultiplyMatrixWVector(this.get_Jacobian_Matrix(this.position.copy(), t), this.velocity.copy()).mult(dt*this.q)
-    //).sub(
-    //  this.MultiplyMatrixWVector(this.inv_polarityMatrix, this.velocity.copy().sub(this.f_ext.copy())).mult(dt)
-    //).add(
-    //  this.MultiplyMatrixWVector(this.diffusionMatrix, this.get_random_vector()).mult(Math.sqrt(dt))
-    //);
 
     //-------------------------------------------- velocity integration to get cell position
     this.position.add(this.velocity.copy().mult(dt));
@@ -122,27 +113,19 @@ class Cell {
   // Intermediate functions
   // ------------------------------------------------------------------------------------
   
-  get_random_vector() {   
-    // Box-Muller transform 
-    let u = 0.0, v = 0.0; 
-    while(u === 0.0) u = Math.random();  // Converting [0,1) to (0,1)
-    while(v === 0.0) v = Math.random();
-    let noise = createVector(
-      Math.sqrt(-2.0*Math.log(u)) * Math.cos(2.0*Math.PI*v),
-      Math.sqrt(-2.0*Math.log(u)) * Math.sin(2.0*Math.PI*v)
-    );
-    return noise;
-  }
-
-  get_Psi_curvature(pos, vel, t){
+  getPsiCurv(pos, vel, t){
     // this function returns the contribution of f_ext caused by the static curvature. The formulation is discontinuous for the angle
 
-    vel=this.From_global_to_local(vel.copy(),t);
+    vel=NormalizeVector(this.From_global_to_local(vel, t));
+    drawVector(0.0, 0.0, this.From_local_to_global(vel.copy(), t).mult(15.0), 'red');
+    
     // 1. mesurements of the angle between e2 and the velocity
     let theta=0.0;
     if (meanCurvature(pos, t, angleParams)>=0.0){
-      // normalized local basis (e1, e2) 
-      let [e1, e2]=Normalize_Vec(this.From_global_to_local(gradCurvature(pos, t, angleParams), t));
+      // local basis (e1, e2) 
+      let [e1, e2]=NormalizeVector(this.From_global_to_local(gradCurvature(pos, t, angleParams), t));
+      drawVector(0.0, 0.0, this.From_local_to_global(e1, t).copy().mult(15.0), 'black');
+      drawVector(0.0, 0.0, this.From_local_to_global(e2, t).copy().mult(15.0), 'blue');
       //let [e1, e2]=Normalize_Vec(gradCurvature(pos, t, angleParams));
 
       // is the cell polarized along +e2 (True) or -e2 (False) ?
@@ -151,13 +134,18 @@ class Cell {
       } 
       theta=e2.angleBetween(vel);
     }
+    console.log("--------- debut du print ---------")
+    console.log("theta :", (theta*180.0/Math.PI).toFixed(5));
+    console.log("sin, cos :", Math.sin(theta).toFixed(5), Math.cos(theta).toFixed(5));
+    console.log("vx, vy :", vel.x.toFixed(5), vel.y.toFixed(5));
+    console.log("atan2", (atan2(vel.x, vel.y)*180.0/Math.PI).toFixed(5))
     
     // 2. define the orientation of f_stat
-    let w=Normalize_Vec(vel.copy().rotate(-this.alpha*theta));
+    let w=NormalizeVector(vel.copy().rotate(-this.alpha*theta));
 
     // 3. norm of psi
-    let f_d = 0.24*Math.exp(-lambda/19.8) + 0.02;               
-    this.f_mag -= dt/this.tau_stat * (this.f_mag-f_d);     
+    let f_d = 0.24*Math.exp(-lambda/19.8) + 0.02;
+    this.f_mag -= dt/this.tau_stat * (this.f_mag-f_d);
     
     return w.mult(this.f_mag);
   }
@@ -175,7 +163,7 @@ class Cell {
       if (pol.dot(e2)<0.0){
         e2.mult(-1.0);
       }
-      let equilibrium=Normalize_Vec(e2).mult(f_d);
+      let equilibrium=NormalizeVector(e2).mult(f_d);
 
       this.f_mag -= dt/this.tau_stat * (this.f_mag-f_d);          
       this.f_ang -= dt/this.tau_stat * (this.f_ang-createVector(1.0, 0.0).angleBetween(equilibrium)); 
@@ -184,7 +172,7 @@ class Cell {
    return this.f;
   }
 
-  get_Psi_wave(pos, t){
+  getPsiWave(pos, t){
     let W = this.From_global_to_local(phase_velocity(pos, t, angleParams), t);
     //let W = phase_velocity(pos, t, angleParams);
     let Wspeed = W.mag();
@@ -193,98 +181,37 @@ class Cell {
     let s = Wspeed / (1.0+(Wspeed/this.Vmax)**3.0);
 
     this.beta -= dt/this.tau_dyna * (this.beta-s);       // update beta
-    return Normalize_Vec(W).mult(this.beta);
+    return NormalizeVector(W).mult(this.beta);
   }
 
   get_Jacobian_Matrix(pos, t){
     // local basis
     let [gradH, gradH_perp]=gradCurvature(pos, t, angleParams);
-    // global basis
-    //let [X, Y]=[createVector(1.0, 0.0), createVector(0.0, 1.0)];
-
-    // base locale
+    let curv=gradH.mag();
     let sgn=Math.sign(gradH.dot(this.velocity));
-    let Mxx=gradH.mag() * sgn;
-    let Myy=0.0;
-    let Mxy=0.0;
+    let Local_Jac=[[curv*sgn, 0.0], 
+                   [0.0, 0.0]];
 
-    //let theta=gradH.angleBetween(X);
-    //let sgn=Math.sign(gradH.dot(this.velocity));
-    ////let sgn=Math.sign(gradH.y);
-    //let curv=gradH.mag();
-    //let Mxx=sgn*curv*Math.cos(theta)**2.0;
-    //let Myy=sgn*curv*Math.sin(theta)**2.0;
-    //let Mxy=sgn*Math.abs(curv)*Math.cos(theta)*Math.sin(theta);
-  
-    //let Mxx=gradH.x;
-    //let Myy=gradH.y;
-    //let Mxy=0.0;
+    let [e1, e2]=NormalizeVector([gradH, gradH_perp]);
+    let U=[[e1.x, e2.x],
+           [e1.y, e2.y]];
 
-    //let e1=Normalize_Vec(gradH.copy());
-    //let Mxx=-gradH.x * e1.y;
-    //let Myy=gradH.y * e1.x;
-    //let Mxy=-gradH.y * e1.y;
-    //let Myx=gradH.x * e1.x;
-
-    //let Mxx=gradH.x*Math.sin(theta)**2.0 + gradH.y*Math.cos(theta)**2.0;
-    //let Myy=gradH.x*Math.cos(theta)**2.0 + gradH.y*Math.sin(theta)**2.0;
-    //let Mxy=Math.abs(gradH.x-gradH.y)*Math.cos(theta)*gradH.y*Math.sin(theta);
-
-    return [[Mxx, Mxy], [Mxy, Myy]];
-    //return [[Mxy, Myy], [-Mxx, -Mxy]];
+    return MatrixMatrixProduct(U, MatrixMatrixProduct(Local_Jac, MatrixTranspose(U)));
   }
 
-  Inferred_parameters_mapping(pos, t){
+  InferredParametersGlobalMapping(pos, t){
     // local basis expressed in global basis
-    let [e1, e2]=Normalize_Vec(gradCurvature(pos, t, angleParams));
+    let [e1, e2]=NormalizeVector(gradCurvature(pos, t, angleParams));
 
-    // U : matrice de changement de base de local à global
+    // U: matrice de changement de base de local à global
     // Soit D une matrice 2x2 diagonale exprimée en base locale, alors D en base globale est donné par,
     // D(globale) = U.D(locale).U^T
     let U=[[e1.x, e2.x],
            [e1.y, e2.y]]
 
-    // persistence matrix (from local basis P1, P2 to global basis Pxx, Pxy, Pyy)
-    let Pxx=1.0/this.P1*(U[0][0])**2.0 + 1.0/this.P2*(U[0][1])**2.0;
-    let Pyy=1.0/this.P1*(U[1][0])**2.0 + 1.0/this.P2*(U[1][1])**2.0;
-    let Pxy=1.0/this.P1*U[0][0]*U[1][0] + 1.0/this.P2*U[0][1]*U[1][1];
-    this.inv_polarityMatrix = [
-      [Pxx, Pxy],
-      [Pxy, Pyy], 
-    ];
-
-    // diffusion matrix
-    let Sxx=this.S1/Math.sqrt(this.P1)*U[0][0]**2.0 + this.S2/Math.sqrt(this.P2)*U[0][1]**2.0;
-    let Syy=this.S1/Math.sqrt(this.P1)*U[1][0]**2.0 + this.S2/Math.sqrt(this.P2)*U[1][1]**2.0;
-    let Sxy=this.S1/Math.sqrt(this.P1)*U[0][0]*U[1][0] + this.S2/Math.sqrt(this.P2)*U[0][1]*U[1][1];
-    this.inv_polarityMatrix = [
-      [Sxx, Sxy],
-      [Sxy, Syy], 
-    ];
-
-  }
-
-  MultiplyMatrixWVector(A, v){
-    let v1=v.x, v2=v.y;
-    return createVector(A[0][0]*v1 + A[0][1]*v2, A[1][0]*v1 + A[1][1]*v2);
-  }
-
-  DoubleDotProduct(matrixA, matrixB) {
-  let sum = 0.;
-  for (let i = 0; i < 2; i++) {
-    for (let j = 0; j < 2; j++) {
-      sum += matrixA[i][j] * matrixB[i][j];
-    }
-  }
-  return sum;
-}
-
-  Heaviside_step_function(s){
-    if (s<=0.0){
-      return 0.0;
-    } else {
-      return 1.0;
-    }
+    // Matrix rotation
+    this.Global_Persistence_Matrix=MatrixMatrixProduct(U, MatrixMatrixProduct(this.Local_Persistence_Matrix, MatrixTranspose(U)));
+    this.Global_Diffusion_Matrix=MatrixMatrixProduct(U, MatrixMatrixProduct(this.Local_Diffusion_Matrix, MatrixTranspose(U)));
   }
 
   From_global_to_local(vecs, t){
@@ -294,16 +221,14 @@ class Cell {
     const isArray = Array.isArray(vecs);
     const array_of_vectors = isArray ? vecs : [vecs];  // if vecs is a single vector in argument, it is stored in an array
     
-    let [e1, e2]=gradCurvature(this.position, t, angleParams);
-    let theta=createVector(1.0, 0.0).angleBetween(e1);
-    let c = Math.cos(theta), s = Math.sin(theta);
+    let [e1, e2]=NormalizeVector(gradCurvature(this.position, t, angleParams));
+    let U=[[e1.x, e2.x],
+           [e1.y, e2.y]];
     
     let rotation_done=[];
     for (let i=0; i<array_of_vectors.length; i++){
-      let vx=array_of_vectors[i].x, vy=array_of_vectors[i].y;
-      rotation_done.push(createVector(c*vx + s*vy, -s*vx + c*vy));
+      rotation_done.push(MatrixVectorProduct(MatrixTranspose(U), array_of_vectors[i]));
     }
-
     return isArray ? rotation_done : rotation_done[0];
   }
 
@@ -314,16 +239,14 @@ class Cell {
     const isArray = Array.isArray(vecs);
     const array_of_vectors = isArray ? vecs : [vecs];  // if vecs is a single vector in argument, it is stored in an array
     
-    let [e1, e2]=gradCurvature(this.position, t, angleParams);
-    let theta=createVector(1.0, 0.0).angleBetween(e1);
-    let c = Math.cos(theta), s = Math.sin(theta);
+    let [e1, e2]=NormalizeVector(gradCurvature(this.position, t, angleParams));
+    let U=[[e1.x, e2.x],
+           [e1.y, e2.y]];
     
     let rotation_done=[];
     for (let i=0; i<array_of_vectors.length; i++){
-      let vx=array_of_vectors[i].x, vy=array_of_vectors[i].y;
-      rotation_done.push(createVector(c*vx - s*vy, s*vx + c*vy));
+      rotation_done.push(MatrixVectorProduct(U, array_of_vectors[i]));
     }
-
     return isArray ? rotation_done : rotation_done[0];
   }
  

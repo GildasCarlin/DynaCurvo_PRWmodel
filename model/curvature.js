@@ -203,26 +203,8 @@ function gradCurvature(pos, t, params){
 }
 
 
-//  Vector normalization
-//-----------------------------------------------------------------
 
-function Normalize_Vec(vecs){
 
-  const isArray=Array.isArray(vecs);
-  const array_of_vectors=isArray ? vecs : [vecs];
-
-  let normalization_done=[];
-  for (let i=0; i<array_of_vectors.length; i++){
-
-    if (array_of_vectors[i].mag() < pow(10.0, -10)){
-      normalization_done.push(createVector(0.0, 0.0));
-    } else {
-      normalization_done.push(array_of_vectors[i].normalize());
-    }
-  }
-
-  return isArray ? normalization_done : normalization_done[0];
-}
 
 
 
