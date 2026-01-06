@@ -96,10 +96,11 @@ class Cell {
     this.f_ext = createVector(0.0, 0.0);
     if (curv_assumption) this.f_ext.add(this.getPsiCurv(this.position, this.velocity.copy(), t));
     if (surf_assumption) this.f_ext.add(this.getPsiWave(this.position, t));
+    this.f_ext=this.From_local_to_global(this.f_ext, t);                
 
     //-------------------------------------------- velocity computation
     this.velocity = this.velocity.add(
-      MatrixVectorProduct(this.get_Jacobian_Matrix(this.position, t), this.velocity).mult(dt*this.q)
+      MatrixVectorProduct(this.getJacobianMatrix(this.position, t), this.velocity).mult(dt*this.q)
     ).sub(
       MatrixVectorProduct(this.Global_Persistence_Matrix, this.velocity.copy().sub(this.f_ext)).mult(dt)
     ).add(
@@ -117,16 +118,11 @@ class Cell {
     // this function returns the contribution of f_ext caused by the static curvature. The formulation is discontinuous for the angle
 
     vel=NormalizeVector(this.From_global_to_local(vel, t));
-    drawVector(0.0, 0.0, this.From_local_to_global(vel.copy(), t).mult(15.0), 'red');
-    
     // 1. mesurements of the angle between e2 and the velocity
     let theta=0.0;
     if (meanCurvature(pos, t, angleParams)>=0.0){
-      // local basis (e1, e2) 
-      let [e1, e2]=NormalizeVector(this.From_global_to_local(gradCurvature(pos, t, angleParams), t));
-      drawVector(0.0, 0.0, this.From_local_to_global(e1, t).copy().mult(15.0), 'black');
-      drawVector(0.0, 0.0, this.From_local_to_global(e2, t).copy().mult(15.0), 'blue');
-      //let [e1, e2]=Normalize_Vec(gradCurvature(pos, t, angleParams));
+      // local basis (e1, e2)
+      let e2=NormalizeVector(this.From_global_to_local(gradCurvature(pos, t, angleParams)[1], t));
 
       // is the cell polarized along +e2 (True) or -e2 (False) ?
       if (vel.dot(e2)<0.0){
@@ -134,12 +130,7 @@ class Cell {
       } 
       theta=e2.angleBetween(vel);
     }
-    console.log("--------- debut du print ---------")
-    console.log("theta :", (theta*180.0/Math.PI).toFixed(5));
-    console.log("sin, cos :", Math.sin(theta).toFixed(5), Math.cos(theta).toFixed(5));
-    console.log("vx, vy :", vel.x.toFixed(5), vel.y.toFixed(5));
-    console.log("atan2", (atan2(vel.x, vel.y)*180.0/Math.PI).toFixed(5))
-    
+
     // 2. define the orientation of f_stat
     let w=NormalizeVector(vel.copy().rotate(-this.alpha*theta));
 
@@ -174,7 +165,6 @@ class Cell {
 
   getPsiWave(pos, t){
     let W = this.From_global_to_local(phase_velocity(pos, t, angleParams), t);
-    //let W = phase_velocity(pos, t, angleParams);
     let Wspeed = W.mag();
 
     // target velocity
@@ -184,7 +174,7 @@ class Cell {
     return NormalizeVector(W).mult(this.beta);
   }
 
-  get_Jacobian_Matrix(pos, t){
+  getJacobianMatrix(pos, t){
     // local basis
     let [gradH, gradH_perp]=gradCurvature(pos, t, angleParams);
     let curv=gradH.mag();
