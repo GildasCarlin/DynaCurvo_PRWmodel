@@ -14,18 +14,21 @@
 //-------------------------------------------------------------------------------------------------------
 
 // a surface is defined by an explicit string 'flat' or 'right_sinus' or by an index 0 or 1 respectively
-let surface_index = 0;
-if (surface=='right_sinus'){
-  surface_index = 1;
-}  
+let surface_repertory={"flat":0,
+                       "right_sinus":1,
+                       "wells_sinus":2,
+                       "convr_sinus":3,
+                       "snake_sinus":4
+                      };
+
+let surface_representations=[surface_title, surface_repertory[surface_title]];
 
 // wave number
 let k = 2.0*Math.PI/lambda;
-let kc = k * c;
+let kc = k*c;
 
-// minimal and maximal curvature
-Kmax = a*k**2.0;
-Kmin = -1.0*Kmax;
+let ks = 2.0*Math.PI/lambdas;
+let ksc = ks*c;
 
 
 // II. Cell 
@@ -114,8 +117,7 @@ function setup() {
     V_flat = parseFloat(parameters[5]);
   }
 
-
-  if (surface=='right_sinus'){
+  if ([1, 2].includes(surface_representations[1])){
     parameters = all_parameters.getColumn(Math.floor(lambda).toString());
   }
   parameters = parameters.map(parseFloat);
@@ -164,11 +166,14 @@ function initBackground(t){
 
   // Set the resolution as a uniform
   theShader.setUniform('u_resolution', [width, height]);
-  theShader.setUniform('surface', surface_index);
+  theShader.setUniform('surface', surface_representations[1]);
   theShader.setUniform('k', k);
   theShader.setUniform('kc', kc);
+  theShader.setUniform('ks', ks);
+  theShader.setUniform('ksc', ksc);
   theShader.setUniform('phi0', phi0);
   theShader.setUniform('psi0', psi0);
+  theShader.setUniform('Dpsi', Dpsi);
   theShader.setUniform('t', t);
   theShader.setUniform('s', height);
   theShader.setUniform('num_angles', angleParams.length);
@@ -187,10 +192,11 @@ function initTable(){
   let table_data = [];
 
   table_data.push('# Metadata');
-  table_data.push(`# Surface=${surface}`);
-  table_data.push(`# Surface Index=${surface_index}`);
+  table_data.push(`# Surface=${surface_representations[0]}`);
+  table_data.push(`# Surface Index=${surface_representations[1]}`);
   table_data.push(`# Amplitude=${a}`);
   table_data.push(`# Wavelength=${lambda}`);
+  table_data.push(`# Wavelength (snake)=${lambdas}`);
   table_data.push(`# Wave Celerity=${c}`);
   table_data.push(`# Angular Velocity=${w}`);
   table_data.push(`# Initial Phase=${phi0}`);
@@ -261,6 +267,39 @@ function draw(){
       capturer.stop();
     }
   }
+
+
+  let xm=-200.0;//+Math.cos(psi0)*c*timer_sec;  //x*Math.sin(psi) + y*Math.cos(psi)
+  let ym=0.0-Math.sin(psi0)*c*timer_sec;
+  let posiM=createVector(xm, ym);
+  
+  let xf=-20.0, yf=0.0;
+  let posiF=createVector(xf, yf);
+
+  //push();
+  //fill('red');
+  //stroke(0);
+  //translate(xm, ym);
+  //ellipse(0, 0, 10.0, 10.0);
+  //pop();
+
+  //push();
+  //fill('black');
+  //stroke(0);
+  //translate(xf, yf);
+  //ellipse(0, 0, 10.0, 10.0);
+  //pop();
+
+  let [gradf, gradpf]=gradCurvature(posiF, timer_sec, angleParams);
+  let [gradm, gradpm]=gradCurvature(posiM, timer_sec, angleParams);
+  //drawVector(xf, yf, gradf.copy().mult(50000), 'red');
+  //drawVector(xm, ym, gradm.copy().mult(50000), 'red');
+
+  console.log("------------ debut du print ---------------");
+  console.log("psi :", psi0*180.0/Math.PI);
+  console.log("cos, sin :", Math.cos(psi0).toFixed(3), Math.sin(psi0).toFixed(3));
+  console.log("heigth fixed point :", substrate(posiF, timer_sec, angleParams).toFixed(3));
+  console.log("heigth moving point :", substrate(posiM, timer_sec, angleParams).toFixed(3));
 
   // data 
   export_the_data();

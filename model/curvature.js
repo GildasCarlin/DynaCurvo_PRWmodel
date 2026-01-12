@@ -18,12 +18,20 @@ function logi(t, param){
   return -param[0]/(1.0+Math.exp(-param[1]*(t-param[2])));
 }
 
-function angle(t, params=angleParams){
-  let psi = -psi0;
-  for (const param of params) {
-    psi += logi(t, param);
+function angle(pos, t, params=angleParams){
+  let psi = psi0;
+
+  if (surface_representations[0] == 'right_sinus'){
+    for (const param of params){
+      psi += logi(t, param);
+    }
   }
-  return psi;  
+
+  if (surface_representations[0] == 'convr_sinus'){
+    psi *= (1.0/(1.0+exp(-0.02*pos.x))-0.5);
+  }
+
+  return psi;
 }
 
 function angleDerivatives(t, params=angleParams){
@@ -36,28 +44,51 @@ function angleDerivatives(t, params=angleParams){
   return psi_dot;
 }
 
-function phase(t){
-  return phi0-kc*t;
+function phase(pos, t){
+  if (surface_representations[1]==1 || surface_representations[1]==2 || surface_representations[1]==3){
+    return phi0-kc*t;
+  }
+
+  if (surface_representations[0]=="snake_sinus"){
+    return sin(ks*pos.y + ksc*t);
+  }
+  
 }
 
 function phaseDerivatives(t){
-  return kc;
+  return -kc;
 }
 
 function shape(pos, t, params){
-  let x = pos.x;
-  let y = pos.y;
-  let psi = angle(t, params);
+  let x = pos.x, y = pos.y;
+  let psi = angle(pos, t, params);
 
-  return k * (-y*cos(psi)+x*sin(psi));
+  if (surface_representations[0] == 'right_sinus'){
+    return k*(x*Math.cos(psi) + y*Math.sin(psi));
+  }
+
+  if (surface_representations[0] == 'wells_sinus'){
+    let shape=[x, (x*Math.cos(psi) + y*Math.sin(psi))];
+    return shape.map(f => k*f);
+  }
+
+  if (surface_representations[0] == 'convr_sinus'){
+    return k*(x*Math.sin(psi) + y*Math.cos(psi));
+  }
+
+  if (surface_representations[0] == 'snake_sinus'){
+    return k*x;
+  }
+
+  
 }
 
 function shapeSpatialDerivatives(pos, t, params){
   let [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy] = new Array(9).fill(0.0);
   let psi = angle(t, params);
 
-  fx = k * sin(psi);
-  fy = -k * cos(psi);
+  fx = k * cos(psi);
+  fy = -k * sin(psi);
 
   return [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy];
 }
@@ -85,20 +116,39 @@ function shapeTimeDerivatives(pos, t, params){
 function substrate(pos, t, params){
   let f = 0.0;
   
-  if (surface == 'right_sinus'){  
-    // phase and shape
-    let phi = phase(t);
+  if (surface_representations[0] == 'right_sinus'){
+    let phi = phase(pos, t);
     let r = shape(pos, t, params);
     
     f = a*sin(r + phi);
   }
+
+  if (surface_representations[0] == 'wells_sinus'){
+    let phi = phase(pos, t);
+    let r = shape(pos, t, params);
+
+    f=0.5*a*(sin(r[0]) + sin(r[1] + phi));
+  }
+
+  if (surface_representations[0] == 'convr_sinus'){
+    let phi = -phase(pos, t);
+    let r = shape(pos, t, params);
+    f=a*sin(r+phi);
+  }
+
+  if (surface_representations[0] == 'snake_sinus'){
+    let phi = phase(pos, t);
+    let r = shape(pos, t, params);
+    f=a*sin(r+phi);
+  }
+
   return f;
 }
 
 function substrateSpatialDerivatives(pos, t, params){
   let [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy] = new Array(9).fill(0.0);
 
-  if (surface == 'right_sinus'){
+  if (surface_representations[0] == 'right_sinus'){
     // phase and shape
     let phi = phase(t);
     let r = shape(pos, t, params);
@@ -119,35 +169,60 @@ function substrateSpatialDerivatives(pos, t, params){
     fxyy = (rxyy-rx*ry**2.0)*c - (ryy*rx+2.0*rxy*ry)*s;
   }
 
+  if (surface_representations[0] == 'wells_sinus'){
+    let phi = phase(t);
+    let r = shape(pos, t, params);
+    let cx=cos(r[0]), sx=sin(r[0]);
+    let cy=cos(r[1]+phi), sy=sin(r[1]+phi);
+
+    fx = 0.5*k*cx;
+    fy = 0.5*k*cy;
+
+    fxx = -0.5*k**2.0*sx;
+    fyy = -0.5*k**2.0*sy;
+
+    fxxx = -0.5*k**3.0*cx;
+    fyyy = -0.5*k**3.0*cy;
+  }
+
   return [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy].map(f => a*f);
 }
 
 function substrateTimeDerivatives(pos, t, params){
   let [ft, ftx, fty] = new Array(3).fill(0.0);
 
-  // phase and its derivative
-  let phi=phase(t), phi_t=phaseDerivatives(t);
+  if (surface_representations[0] == 'right_sinus'){
+    // phase and its derivative
+    let phi=phase(t), phi_t=phaseDerivatives(t);
 
-  // shape and its derivatives
-  let r = shape(pos, t, params);
-  let [rx, rxx, rxxx, ry, ryy, ryyy, rxy, rxxy, rxyy] = shapeSpatialDerivatives(pos, t, params);
-  let [rt, rtx, rty] = shapeTimeDerivatives(pos, t, params);
+    // shape and its derivatives
+    let r = shape(pos, t, params);
+    let [rx, rxx, rxxx, ry, ryy, ryyy, rxy, rxxy, rxyy] = shapeSpatialDerivatives(pos, t, params);
+    let [rt, rtx, rty] = shapeTimeDerivatives(pos, t, params);
+    let c=cos(r+phi), s=sin(r+phi);
+
+    ft = (rt+phi_t) * cos(r+phi);
+
+    ftx = rtx*c - (rt+phi_t)*rx*s;
+    fty = rty*c - (rt+phi_t)*ry*s;
+  }
+
+  if (surface_representations[0] == 'wells_sinus'){
+    let phi=phase(t), phi_t=phaseDerivatives(t);
+    let r = shape(pos, t, params);
+    let cy=cos(r[1]+phi), sy=sin(r[1]+phi);
+
+    ft = 0.5*phi_t*cy;
+    fty = -0.5*k*phi_t*sy;
+  }
   
-  // convenient notation
-  let c=cos(r+phi), s=sin(r+phi);
-
-  ft = (rt+phi_t) * cos(r+phi);
-
-  ftx = rtx*c - (rt+phi_t)*rx*s;
-  fty = rty*c - (rt+phi_t)*ry*s;
-
   return [ft, ftx, fty].map(f => a*f);
 }
 
 function phase_velocity(pos, t, params){
   let psi = angle(t, params);
   let psi_dot=angleDerivatives(t, params);
-  return createVector(sin(psi), -cos(psi)).mult(c).add(createVector(-pos.y, -pos.x).mult(psi_dot)); 
+  return createVector(sin(psi), -cos(psi)).mult(c).add(createVector(-pos.y, -pos.x).mult(psi_dot));
 }
 
 //  Curvature metrics

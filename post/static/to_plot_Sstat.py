@@ -188,6 +188,7 @@ CI_flat = CI_in_dict.pop('flat', None)
 list_central=np.array(list(cent_in_dict.values()))
 list_CI=np.array(list(CI_in_dict.values()))
 
+
 xbornes=[10., 170.]
 
 ##### plot velocity distribution

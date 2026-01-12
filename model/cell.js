@@ -135,7 +135,7 @@ class Cell {
     let w=NormalizeVector(vel.copy().rotate(-this.alpha*theta));
 
     // 3. norm of psi
-    let f_d = 0.24*Math.exp(-lambda/19.8) + 0.02;
+    let f_d = 0.22*Math.exp(-lambda/23.8) + 0.01;
     this.f_mag -= dt/this.tau_stat * (this.f_mag-f_d);
     
     return w.mult(this.f_mag);
