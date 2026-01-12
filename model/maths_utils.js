@@ -81,6 +81,11 @@ function HeavisideStepFunction(s, m=0.0){
   if (s==0.0) return m;
 }
 
+function LogisticFunction(t, param){
+  // logistic function A/(1+exp(-w(t-tau))) with param=[A, w, tau]
+  return param[0]/(1.0+Math.exp(-param[1]*(t-param[2])));
+}
+
 
 
 

@@ -270,36 +270,38 @@ function draw(){
 
 
   let xm=-200.0;//+Math.cos(psi0)*c*timer_sec;  //x*Math.sin(psi) + y*Math.cos(psi)
-  let ym=0.0-Math.sin(psi0)*c*timer_sec;
+  let ym=0.0+Math.sin(psi0)*c*timer_sec;
   let posiM=createVector(xm, ym);
   
-  let xf=-20.0, yf=0.0;
+  let xf=0.0, yf=0.0;
   let posiF=createVector(xf, yf);
 
-  //push();
-  //fill('red');
-  //stroke(0);
-  //translate(xm, ym);
-  //ellipse(0, 0, 10.0, 10.0);
-  //pop();
+  push();
+  fill('red');
+  stroke(0);
+  translate(xm, ym);
+  ellipse(0, 0, 10.0, 10.0);
+  pop();
 
-  //push();
-  //fill('black');
-  //stroke(0);
-  //translate(xf, yf);
-  //ellipse(0, 0, 10.0, 10.0);
-  //pop();
+  push();
+  fill('black');
+  stroke(0);
+  translate(xf, yf);
+  ellipse(0, 0, 10.0, 10.0);
+  pop();
 
   let [gradf, gradpf]=gradCurvature(posiF, timer_sec, angleParams);
   let [gradm, gradpm]=gradCurvature(posiM, timer_sec, angleParams);
-  //drawVector(xf, yf, gradf.copy().mult(50000), 'red');
-  //drawVector(xm, ym, gradm.copy().mult(50000), 'red');
+  drawVector(xf, yf, gradf.copy().mult(50000), 'red');
+  drawVector(xm, ym, gradm.copy().mult(50000), 'red');
 
-  console.log("------------ debut du print ---------------");
-  console.log("psi :", psi0*180.0/Math.PI);
-  console.log("cos, sin :", Math.cos(psi0).toFixed(3), Math.sin(psi0).toFixed(3));
+  console.log("------------ dans sketch.js ---------------");
+  //console.log("psi :", psi0*180.0/Math.PI);
+  //console.log("cos, sin :", Math.cos(psi0).toFixed(3), Math.sin(psi0).toFixed(3));
   console.log("heigth fixed point :", substrate(posiF, timer_sec, angleParams).toFixed(3));
   console.log("heigth moving point :", substrate(posiM, timer_sec, angleParams).toFixed(3));
+  console.log("gradient selon x :", gradf.x.toFixed(5));
+  console.log("gradient selon y :", gradf.y.toFixed(5));
 
   // data 
   export_the_data();

@@ -31,7 +31,7 @@ uniform vec3 temporal_angle[MAX_ANGLES];
 float angle(float x, float y){
   float psi = psi0;
   if (surface==1){
-    for (int i = 0; i < MAX_ANGLES; i++) {
+    for (int i = 0; i < MAX_ANGLES; i++){
       if (i >= num_angles) break; 
 
       float A = temporal_angle[i].x; 
@@ -42,7 +42,7 @@ float angle(float x, float y){
   }
   
   if (surface==3){
-    psi=psi*(1.0/(1.0+exp(-0.02*x))-0.5);
+  psi=psi/(1.0+exp(0.02*x))-0.5*psi;  //
   }
 
   return psi;
@@ -90,10 +90,9 @@ float surface_equation(float x, float y){
   }
 
   if (surface==3){  // convr_sinus
-    float phi = -phase(x, y);
+    float phi = phase(x, y);
     float psi = angle(x, y);
-    //m = 0.5*(1.0+(1.0-side)*sin(k*(y*sin(psi) + x*cos(psi)) + phi)+side*sin(k*(y*sin(psi+Dpsi) + x*cos(psi+Dpsi)) + phi));
-    m = 0.5 * (1.0 + sin(k*(x*sin(psi) + y*cos(psi)) + phi));
+    m = 0.5 * (1.0 + sin(k*(x*sin(psi) + y*cos(psi)) - phi));
   }
 
   if (surface==4){   // snake_sinus

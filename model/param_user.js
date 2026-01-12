@@ -45,7 +45,7 @@
 //                               -- wave celerity c>=0 (µm/s)
 //                               -- initial phase phi0 (unitless) (commun for the two directions)
 
-let surface_title = 'wells_sinus';
+let surface_title = 'convr_sinus';
 
 let a = 10.0;
 let lambda = 80.0;
@@ -53,19 +53,19 @@ let c = 1.0;
 let phi0 = 0.0;
 
 let w = 1.0;
-let psi0 = 0.0-Math.PI/2.0;
-let angleParams=[];
+let psi0 = 0.0-Math.PI/4.0;
+let angleParams=[]; //[-Math.PI/4.0, w, 60.0], [Math.PI/4.0, w, 120.0]
 let Dpsi=Math.PI/2.0;
 let lambdas=80.0;
 
-//[[-Math.PI/4.0, w, 600.0], [Math.PI/4.0, w, 1200.0]]
+
 
 
 // II. Cell 
 //-------------------------------------------------------------------------------------------------------
 
 // number of cells
-let nbCell =0;
+let nbCell=0;
 
 // central metric     median  /  mean
 let central_metric = 'mean';
