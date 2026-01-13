@@ -10,11 +10,11 @@
 function getRandomVector(){   
   // Box-Muller transform 
   let u = 0.0, v = 0.0; 
-  while(u === 0.0) u = Math.random();  // Converting [0,1) to (0,1)
-  while(v === 0.0) v = Math.random();
+  while(u === 0.0) u = random();  // Converting [0,1) to (0,1)
+  while(v === 0.0) v = random();
   let noise = createVector(
-    Math.sqrt(-2.0*Math.log(u)) * Math.cos(2.0*Math.PI*v),
-    Math.sqrt(-2.0*Math.log(u)) * Math.sin(2.0*Math.PI*v)
+    sqrt(-2.0*log(u)) * cos(2.0*PI*v),
+    sqrt(-2.0*log(u)) * sin(2.0*PI*v)
   );
   return noise;
 }
@@ -83,7 +83,7 @@ function HeavisideStepFunction(s, m=0.0){
 
 function LogisticFunction(t, param){
   // logistic function A/(1+exp(-w(t-tau))) with param=[A, w, tau]
-  return param[0]/(1.0+Math.exp(-param[1]*(t-param[2])));
+  return param[0]/(1.0+exp(-param[1]*(t-param[2])));
 }
 
 

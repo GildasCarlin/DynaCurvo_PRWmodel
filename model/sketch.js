@@ -173,7 +173,7 @@ function initBackground(t){
   theShader.setUniform('ksc', ksc);
   theShader.setUniform('phi0', phi0);
   theShader.setUniform('psi0', psi0);
-  theShader.setUniform('Dpsi', Dpsi);
+  theShader.setUniform('w', w);
   theShader.setUniform('t', t);
   theShader.setUniform('s', height);
   theShader.setUniform('num_angles', angleParams.length);
@@ -273,7 +273,7 @@ function draw(){
   let ym=0.0+Math.sin(psi0)*c*timer_sec;
   let posiM=createVector(xm, ym);
   
-  let xf=0.0, yf=0.0;
+  let xf=-200.0, yf=0.0;
   let posiF=createVector(xf, yf);
 
   push();
@@ -300,8 +300,8 @@ function draw(){
   //console.log("cos, sin :", Math.cos(psi0).toFixed(3), Math.sin(psi0).toFixed(3));
   console.log("heigth fixed point :", substrate(posiF, timer_sec, angleParams).toFixed(3));
   console.log("heigth moving point :", substrate(posiM, timer_sec, angleParams).toFixed(3));
-  console.log("gradient selon x :", gradf.x.toFixed(5));
-  console.log("gradient selon y :", gradf.y.toFixed(5));
+  //console.log("gradient selon x :", gradf.x.toFixed(5));
+  //console.log("gradient selon y :", gradf.y.toFixed(5));
 
   // data 
   export_the_data();

@@ -21,7 +21,7 @@ uniform float ks;
 uniform float ksc;
 uniform float phi0;
 uniform float psi0;
-uniform float Dpsi;
+uniform float w;
 uniform float t;
 uniform float s;
 uniform int num_angles;
@@ -42,7 +42,7 @@ float angle(float x, float y){
   }
   
   if (surface==3){
-  psi=psi/(1.0+exp(0.02*x))-0.5*psi;  //
+  psi=psi/(1.0+exp(-w*x))-0.5*psi;  //
   }
 
   return psi;
@@ -97,7 +97,6 @@ float surface_equation(float x, float y){
 
   if (surface==4){   // snake_sinus
     float phi = phase(x, y);
-
     m = 0.5 * (1.0 + sin(k*x + phi));
   }
   return m;
@@ -116,7 +115,7 @@ void main() {
   vec3 color_min = vec3(0.063, 0.396, 0.671);  // concave
   vec3 color = mix(color_min, color_max, h);
 
-  //if (h>0.98){
+  //if (h>0.99){
   //  color = vec3(0.95, 0.42, 0.6);  
   //}
 

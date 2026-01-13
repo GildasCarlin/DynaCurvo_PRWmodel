@@ -35,7 +35,8 @@
 //                               -- wavelength lambda (µm) (commun for the two directions)
 //                               -- wave celerity c>=0 (µm/s)
 //                               -- initial phase phi0 (unitless) (commun for the two directions)
-//                               -- initial angle psi0!=0 (rad)
+//                               -- opening angle psi0!=0 (rad)
+//                               -- rate of angle change w (rad/µm) 
 //                               -- Dpsi>0 (rad)
 // 'snake_sinus': 
 //                               -- index: 4
@@ -52,7 +53,7 @@ let lambda = 80.0;
 let c = 1.0;
 let phi0 = 0.0;
 
-let w = 1.0;
+let w = -0.02;
 let psi0 = 0.0-Math.PI/4.0;
 let angleParams=[]; //[-Math.PI/4.0, w, 60.0], [Math.PI/4.0, w, 120.0]
 let Dpsi=Math.PI/2.0;
