@@ -46,7 +46,7 @@
 //                               -- wave celerity c>=0 (µm/s)
 //                               -- initial phase phi0 (unitless) (commun for the two directions)
 
-let surface_title = 'convr_sinus';
+let surface_title = 'snake_sinus';
 
 let a = 10.0;
 let lambda = 80.0;

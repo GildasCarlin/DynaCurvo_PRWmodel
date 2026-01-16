@@ -115,9 +115,13 @@ void main() {
   vec3 color_min = vec3(0.063, 0.396, 0.671);  // concave
   vec3 color = mix(color_min, color_max, h);
 
-  //if (h>0.99){
-  //  color = vec3(0.95, 0.42, 0.6);  
-  //}
+  if (h>0.9995){
+    color = vec3(0.95, 0.42, 0.6);  
+  }
+
+  if (h<0.0005){
+    color = vec3(0.79, 0.95, 0.07);  
+  }
 
   
   //float x0=0.0;

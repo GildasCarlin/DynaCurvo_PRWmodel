@@ -273,7 +273,7 @@ function draw(){
   let ym=0.0+Math.sin(psi0)*c*timer_sec;
   let posiM=createVector(xm, ym);
   
-  let xf=-200.0, yf=0.0;
+  let xf=180.0, yf=0.0;
   let posiF=createVector(xf, yf);
 
   push();

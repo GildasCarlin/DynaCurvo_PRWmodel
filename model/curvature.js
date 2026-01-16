@@ -45,26 +45,42 @@ function angleSpatialDerivatives(pos, t){
   let [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy] = new Array(9).fill(0.0);
   
   if (surface_representations[0]=="convr_sinus"){
-    let params=[psi0, w, 0.0];
+    let params=[1.0, w, 0.0];
     let f=LogisticFunction(pos.x, params);
-    fx=f*(1.0-f/psi0);
-    fxx=fx*(1.0-2.0*f/psi0);
-    fxxx=fxx*(1.0-2.0*f/psi0) - 2.0/psi0*fx**2.0;
+    fx=psi0*f*(1.0-f);
+    fxx=psi0*fx*(1.0-2.0*f);
+    fxxx=psi0*(fxx-2.0*(fx**2.0+f*fxx));
   }
 
   return [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy].map(f => w*f);
 }
 
 function phase(pos, t){
-  if (surface_representations[1]==1 || surface_representations[1]==2 || surface_representations[1]==3){
+  if (surface_representations[1]==1 || surface_representations[1]==2){
     return phi0-kc*t;
   }
 
+  if (surface_representations[0]=="convr_sinus"){
+    return phi0+kc*t;
+  }
+
   if (surface_representations[0]=="snake_sinus"){
-    return -sin(ks*pos.y + ksc*t);
+    return sin(ks*pos.y + ksc*t);
   }
 }
 
+function phaseSpatialDerivatives(pos, t){
+  let [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy] = new Array(9).fill(0.0);
+
+  if (surface_representations[0]=="snake_sinus"){
+    let arg=ks*pos.y+ksc*t;
+    fy=ks*cos(arg);
+    fyy=-1.0*ks**2.0*sin(arg);
+    fyyy=-1.0*ks**3.0*cos(arg);
+  }
+
+  return [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy];
+}
 
 
 function shape(pos, t, params){
@@ -104,21 +120,21 @@ function shapeSpatialDerivatives(pos, t, params){
     let x=pos.x, y=pos.y;
     let [px, pxx, pxxx, py, pyy, pyyy, pxy, pxxy, pxyy]=angleSpatialDerivatives(pos, t);
 
-    fx=s + x*px*c - y*px*s;
-    fy=c + x*py*c - y*py*s;
+    fx=s + px*(x*c - y*s);
+    fy=c;//c + x*py*c - y*py*s;
 
     fxx=2.0*px*c + x*(pxx*c-px**2.0*s) - y*(pxx*s+px**2.0*c);
-    fxy=py*c-px*s + x*(pxy*c-px*py*s) - y*(pxy*s+px*py*c);
-    fyy=-2.0*py*s - y*(pyy*s+py**2.0*c) + x*(pyy*c-py**2.0*s);
+    fxy=-px*s;//py*c-px*s + x*(pxy*c-px*py*s) - y*(pxy*s+px*py*c);
+    fyy=0.0; //-2.0*py*s - y*(pyy*s+py**2.0*c) + x*(pyy*c-py**2.0*s);
 
     fxxx=2.0*(pxx*c-px**2.0*s) + pxx*c-px**2.0*s + x*(pxxx*c-3.0*pxx*px*s-px**3.0*c) - y*(pxxx*s+3.0*pxx*px*c-px**3.0*s);
-    fxxy=2.0*(pxy*c-px*py*s) - (pxx*s+px**2.0*c) + x*(pxxy*c-pxx*py*s-2.0*pxy*px*s-px**2.0*py*c) - y*(pxxy*s+pxx*py*c-2.0*pxy*px*c-px**2.0*py*s);
-    fxyy=-2.0*(pxy*s+px*py*c) + pyy*c-py**2.0*s - y*(pxyy*s+pyy*px*c+2.0*pxy*py*c-py**2.0*px*s) + x*(pxyy*c-pyy*px*s-2.0*pxy*py*s-py**2.0*px*c);
-    fyyy=-2.0*(pyy*s+py**2.0*c) - (pyy*s+py**2.0*c) - y*(pyyy*s+3.0*pyy*py*c-py**3.0*s) + x*(pyyy*c-3.0*pyy*py*s-py**3.0*c);
+    fxxy=-(pxx*s+px**2.0*c);  //2.0*(pxy*c-px*py*s) - (pxx*s+px**2.0*c) + x*(pxxy*c-pxx*py*s-2.0*pxy*px*s-px**2.0*py*c) - y*(pxxy*s+pxx*py*c-2.0*pxy*px*c-px**2.0*py*s);
+    fxyy=0.0;//-2.0*(pxy*s+px*py*c) + pyy*c-py**2.0*s - y*(pxyy*s+pyy*px*c+2.0*pxy*py*c-py**2.0*px*s) + x*(pxyy*c-pyy*px*s-2.0*pxy*py*s-py**2.0*px*c);
+    fyyy=0.0;//-2.0*(pyy*s+py**2.0*c) - (pyy*s+py**2.0*c) - y*(pyyy*s+3.0*pyy*py*c-py**3.0*s) + x*(pyyy*c-3.0*pyy*py*s-py**3.0*c);
   }
 
   if (surface_representations[0] == 'snake_sinus'){
-
+    fx=1.0;
   }
 
   return [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy].map(f => k*f);
@@ -147,24 +163,16 @@ function shapeSpatialDerivatives(pos, t, params){
 function substrate(pos, t, params){
   let f = 0.0;
   
-  if (surface_representations[1]==1 || surface_representations[1]==3){
+  if (surface_representations[1]==1 || surface_representations[1]==3 || surface_representations[1]==4){
     let phi = phase(pos, t);
     let r = shape(pos, t, params);
-    
     f = sin(r + phi);
   }
 
   if (surface_representations[0] == 'wells_sinus'){
     let phi = phase(pos, t);
     let r = shape(pos, t, params);
-
     f=0.5*(sin(r[0]) + sin(r[1] + phi));
-  }
-
-  if (surface_representations[0] == 'snake_sinus'){
-    let phi = phase(pos, t);
-    let r = shape(pos, t, params);
-    f=sin(r+phi);
   }
 
   return a*f;
@@ -173,24 +181,23 @@ function substrate(pos, t, params){
 function substrateSpatialDerivatives(pos, t, params){
   let [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy] = new Array(9).fill(0.0);
 
-  if (surface_representations[1]==1 || surface_representations[1]==3){
-    let phi = phase(pos, t);
-    let r = shape(pos, t, params);
-    let arg = r+phi;
-    let c = cos(arg), s = sin(arg);
-    let [rx, rxx, rxxx, ry, ryy, ryyy, rxy, rxxy, rxyy] = shapeSpatialDerivatives(pos, t, params);
+  if (surface_representations[1]==1 || surface_representations[1]==3 || surface_representations[1]==4){
+    let phi=phase(pos, t), r=shape(pos, t, params);
+    let c=cos(r+phi), s=sin(r+phi);
+    let [rx, rxx, rxxx, ry, ryy, ryyy, rxy, rxxy, rxyy]=shapeSpatialDerivatives(pos, t, params);
+    let [px, pxx, pxxx, py, pyy, pyyy, pxy, pxxy, pxyy]=phaseSpatialDerivatives(pos, t);
 
-    fx = rx*c;
-    fy = ry*c;
+    fx = (rx+px)*c;
+    fy = (ry+py)*c;
 
-    fxx = rxx*c - rx**2.0*s;
-    fyy = ryy*c - ry**2.0*s;
-    fxy = rxy*c - rx*ry*s;
+    fxx = (rxx+pxx)*c - (rx+px)**2.0*s;
+    fyy = (ryy+pyy)*c - (ry+py)**2.0*s;
+    fxy = (rxy+pxy)*c - (rx+px)*(ry+py)*s;
 
-    fxxx = (rxxx-rx**3.0)*c - 3.0*rxx*rx*s;
-    fyyy = (ryyy-ry**3.0)*c - 3.0*ryy*ry*s;
-    fxxy = (rxxy-rx**2.0*ry)*c - (rxx*ry+2.0*rxy*rx)*s;
-    fxyy = (rxyy-rx*ry**2.0)*c - (ryy*rx+2.0*rxy*ry)*s;
+    fxxx = (rxxx+pxxx-(rx+px)**3.0)*c - 3.0*(rxx+pxx)*(rx+px)*s;
+    fyyy = (ryyy+pyyy-(ry+py)**3.0)*c - 3.0*(ryy+pyy)*(ry+py)*s;
+    fxxy = (rxxy+pxxy-(rx+px)**2.0*(ry+py))*c - ((rxx+pxx)*(ry+py)+2.0*(rxy+pxy)*(rx+px))*s;
+    fxyy = (rxyy+pxyy-(rx+px)*(ry+py)**2.0)*c - ((ryy+pyy)*(rx+px)+2.0*(rxy+pxy)*(ry+py))*s;
   }
 
   if (surface_representations[0] == 'wells_sinus'){
@@ -272,14 +279,7 @@ function curvature_tensor(pos, t, params){
   let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
   let [g, gxx, gyy, gxy] = metric_tensor(pos, t, params);
  
-  let sqrg = sqrt(g);
-
-  // curvature tensor
-  let Kxx = hxx/sqrg;
-  let Kxy = hxy/sqrg;
-  let Kyy = hyy/sqrg;
-
-  return [Kxx, Kyy, Kxy];
+  return [hxx, hyy, hxy].map(K => K/sqrt(g));
 }
 
 function meanCurvature(pos, t, params){
@@ -293,7 +293,7 @@ function gradCurvature(pos, t, params){
 
 
   let u = hxx*gyy + hyy*gxx - 2.0*hxy*gxy;
-  let v = 2.0 * g**1.5;
+  let v = 2.0*g**1.5;
 
   let ux = gyy*hxxx + gxx*hxyy + 2.0*hxx*(hxy*hy+hyy*hx) - 2.0*(gxy*hxxy+hxy*(hxx*hy+hxy*hx));
   let vx = 6.0 * (hxx*hx+hxy*hy) * g**0.5;
