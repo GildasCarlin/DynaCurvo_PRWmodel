@@ -164,7 +164,7 @@ class Cell {
   }
 
   getPsiWave(pos, t){
-    let W = this.From_global_to_local(phase_velocity(pos, t, angleParams), t);
+    let W = this.From_global_to_local(phaseVelocity(pos, t, angleParams), t);
     let Wspeed = W.mag();
 
     // target velocity

@@ -46,18 +46,18 @@
 //                               -- wave celerity c>=0 (µm/s)
 //                               -- initial phase phi0 (unitless) (commun for the two directions)
 
-let surface_title = 'snake_sinus';
+let surface_title = 'right_sinus';
 
 let a = 10.0;
-let lambda = 20.0;
+let lambda = 80.0;
 let c = 0.6;
 let phi0 = 0.0;
 
-let w = 0.0001;
+let w = 1.0;
 let psi0 = 0.0-Math.PI/2.0;//Math.PI/4.0;
-let angleParams=[]; //
+let angleParams=[[Math.PI/4.0, w, 60.0]]; //
 let Dpsi=Math.PI/2.0;
-let lambdas=40.0;
+let lambdas=80.0;
 
 
 
@@ -66,7 +66,7 @@ let lambdas=40.0;
 //-------------------------------------------------------------------------------------------------------
 
 // number of cells
-let nbCell=300;
+let nbCell=0;
 
 // central metric     median  /  mean
 let central_metric = 'mean';
@@ -89,7 +89,7 @@ let Tmax = 1200.0;
 //-------------------------------------------------------------------------------------------------------
 
 // export a .txt file containing trajectories data
-let data = true;
+let data = false;
 let file_name_data = 'data';
 
 // draw 

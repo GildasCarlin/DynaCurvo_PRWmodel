@@ -17,27 +17,29 @@
 function angle(pos, t, params=angleParams){
   let psi=psi0;
 
-  if (surface_representations[0]=='right_sinus' && angleParams.length!=0){
+  if (surface_representations[0]=='right_sinus' && angleParams.length>0){
     for (const param of params){
       psi += LogisticFunction(t, param);
     }
   }
 
-  //if (surface_representations[0]=='convr_sinus'){
-  //  let params=[psi0, w, 0.0];
-  //  psi=LogisticFunction(pos.x, params)-0.5*psi;
-  //}
+  if (surface_representations[1]==2 || surface_representations[1]==3 || surface_representations[1]==4){
+    psi=0.0-HALF_PI;
+  }
 
   return psi;
 }
 
 function angleTimeDerivative(t, params=angleParams){
   let psi_dot=0.0;
-  for (const param of params){
-    // derivative of logistic function f : f'(t)=w*f(t)*(1-f(t)/A)
-    let f=LogisticFunction(t, param);
-    psi_dot += param[1]*f*(1.0-f/param[0]);
+  if (surface_representations[0]=='right_sinus' && angleParams.length>0){
+    for (const param of params){
+      // derivative of logistic function f : f'(t)=w*f(t)*(1-f(t)/A)
+      let f=LogisticFunction(t, param);
+      psi_dot += param[1]*f*(1.0-f/param[0]);
+    }
   }
+
   return psi_dot;
 }
 
@@ -189,10 +191,11 @@ function substrateSpatialDerivatives(pos, t, params){
 
   if (surface_representations[1]==1 || surface_representations[1]==3 || surface_representations[1]==4){
     let phi=phase(pos, t), r=shape(pos, t, params);
+
     let c=cos(r+phi), s=sin(r+phi);
     let [rx, rxx, rxxx, ry, ryy, ryyy, rxy, rxxy, rxyy]=shapeSpatialDerivatives(pos, t, params);
     let [px, pxx, pxxx, py, pyy, pyyy, pxy, pxxy, pxyy]=phaseSpatialDerivatives(pos, t);
-
+    
     fx = (rx+px)*c;
     fy = (ry+py)*c;
 
@@ -260,16 +263,16 @@ function substrateSpatialDerivatives(pos, t, params){
 //  return [ft, ftx, fty].map(f => a*f);
 //}
 
-function phase_velocity(pos, t, params){
+function phaseVelocity(pos, t, params){
   let psi = angle(pos, t, params);
   let psi_dot=angleTimeDerivative(t, params);
-  return createVector(sin(psi), -cos(psi)).mult(c).add(createVector(-pos.y, -pos.x).mult(psi_dot));
+  return createVector(cos(psi), sin(psi)).mult(c).add(createVector(-pos.y, pos.x).mult(psi_dot));
 }
 
 //  Curvature metrics
 //-----------------------------------------------------------------
 
-function metric_tensor(pos, t, params){
+function metricTensor(pos, t, params){
   let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
 
   // metric tensor
@@ -281,12 +284,12 @@ function metric_tensor(pos, t, params){
   return [g, gxx, gyy, gxy];
 }
 
-function curvature_tensor(pos, t, params){
-  let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
-  let [g, gxx, gyy, gxy] = metric_tensor(pos, t, params);
- 
-  return [hxx, hyy, hxy].map(K => K/sqrt(g));
-}
+//function curvatureTensor(pos, t, params){
+//  let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
+//  let [g, gxx, gyy, gxy] = metricTensor(pos, t, params);
+// 
+//  return [hxx, hyy, hxy].map(K => K/sqrt(g));
+//}
 
 function meanCurvature(pos, t, params){
   let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
@@ -295,8 +298,7 @@ function meanCurvature(pos, t, params){
 
 function gradCurvature(pos, t, params){
   let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
-  let [g, gxx, gyy, gxy] = metric_tensor(pos, t, params);
-
+  let [g, gxx, gyy, gxy] = metricTensor(pos, t, params);
 
   let u = hxx*gyy + hyy*gxx - 2.0*hxy*gxy;
   let v = 2.0*g**1.5;
