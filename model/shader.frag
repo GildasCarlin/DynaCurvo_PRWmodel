@@ -41,17 +41,21 @@ float angle(float x, float y){
       }
   }
   
-  if (surface==3){
-  psi=psi/(1.0+exp(-w*x))-0.5*psi;  //
-  }
+  //if (surface==3){
+  //psi=psi/(1.0+exp(-w*x))-0.5*psi;  //
+  //}
 
   return psi;
 }
 
 float phase(float x, float y){
 
-  if (surface==1 || surface==2 || surface==3){
+  if (surface==1 || surface==2){
     return phi0 - kc*t;
+  }
+
+  if (surface==3){  // convr_sinus
+    return phi0 + kc*t + w*pow(x, 2.0);
   }
 
   if (surface==4){  // snake_sinus
@@ -91,8 +95,8 @@ float surface_equation(float x, float y){
 
   if (surface==3){  // convr_sinus
     float phi = phase(x, y);
-    float psi = angle(x, y);
-    m = 0.5 * (1.0 + sin(k*(x*sin(psi) + y*cos(psi)) - phi));
+    //float psi = angle(x, y);
+    m = 0.5 * (1.0 + sin(k*y + phi));
   }
 
   if (surface==4){   // snake_sinus
@@ -115,13 +119,13 @@ void main() {
   vec3 color_min = vec3(0.063, 0.396, 0.671);  // concave
   vec3 color = mix(color_min, color_max, h);
 
-  if (h>0.9995){
-    color = vec3(0.95, 0.42, 0.6);  
-  }
+  //if (h>0.9995){
+  //  color = vec3(0.95, 0.42, 0.6);  
+  //}
 
-  if (h<0.0005){
-    color = vec3(0.79, 0.95, 0.07);  
-  }
+  //if (h<0.0005){
+  //  color = vec3(0.79, 0.95, 0.07);  
+  //}
 
   
   //float x0=0.0;

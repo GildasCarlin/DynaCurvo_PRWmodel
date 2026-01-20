@@ -23,10 +23,10 @@ function angle(pos, t, params=angleParams){
     }
   }
 
-  if (surface_representations[0]=='convr_sinus'){
-    let params=[psi0, w, 0.0];
-    psi=LogisticFunction(pos.x, params)-0.5*psi;
-  }
+  //if (surface_representations[0]=='convr_sinus'){
+  //  let params=[psi0, w, 0.0];
+  //  psi=LogisticFunction(pos.x, params)-0.5*psi;
+  //}
 
   return psi;
 }
@@ -44,13 +44,13 @@ function angleTimeDerivative(t, params=angleParams){
 function angleSpatialDerivatives(pos, t){
   let [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy] = new Array(9).fill(0.0);
   
-  if (surface_representations[0]=="convr_sinus"){
-    let params=[1.0, w, 0.0];
-    let f=LogisticFunction(pos.x, params);
-    fx=psi0*f*(1.0-f);
-    fxx=psi0*fx*(1.0-2.0*f);
-    fxxx=psi0*(fxx-2.0*(fx**2.0+f*fxx));
-  }
+  //if (surface_representations[0]=="convr_sinus"){
+  //  let params=[1.0, w, 0.0];
+  //  let f=LogisticFunction(pos.x, params);
+  //  fx=psi0*f*(1.0-f);
+  //  fxx=psi0*fx*(1.0-2.0*f);
+  //  fxxx=psi0*(fxx-2.0*(fx**2.0+f*fxx));
+  //}
 
   return [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy].map(f => w*f);
 }
@@ -61,7 +61,7 @@ function phase(pos, t){
   }
 
   if (surface_representations[0]=="convr_sinus"){
-    return phi0+kc*t;
+    return phi0+kc*t+w*pos.x**2.0;
   }
 
   if (surface_representations[0]=="snake_sinus"){
@@ -72,6 +72,11 @@ function phase(pos, t){
 function phaseSpatialDerivatives(pos, t){
   let [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy] = new Array(9).fill(0.0);
 
+  if (surface_representations[0]=="convr_sinus"){
+    fx=2.0*w*pos.x;
+    fxx=2.0*w;
+  }
+  
   if (surface_representations[0]=="snake_sinus"){
     let arg=ks*pos.y+ksc*t;
     fy=ks*cos(arg);
@@ -97,7 +102,7 @@ function shape(pos, t, params){
   }
 
   if (surface_representations[0] == 'convr_sinus'){
-    return k*(x*sin(psi) + y*cos(psi));
+    return k*y;
   }
 
   if (surface_representations[0] == 'snake_sinus'){
@@ -115,22 +120,23 @@ function shapeSpatialDerivatives(pos, t, params){
   }
 
   if (surface_representations[0] == 'convr_sinus'){
-    let psi = angle(pos, t, params);
-    let c=cos(psi), s=sin(psi);
-    let x=pos.x, y=pos.y;
-    let [px, pxx, pxxx, py, pyy, pyyy, pxy, pxxy, pxyy]=angleSpatialDerivatives(pos, t);
-
-    fx=s + px*(x*c - y*s);
-    fy=c;//c + x*py*c - y*py*s;
-
-    fxx=2.0*px*c + x*(pxx*c-px**2.0*s) - y*(pxx*s+px**2.0*c);
-    fxy=-px*s;//py*c-px*s + x*(pxy*c-px*py*s) - y*(pxy*s+px*py*c);
-    fyy=0.0; //-2.0*py*s - y*(pyy*s+py**2.0*c) + x*(pyy*c-py**2.0*s);
-
-    fxxx=2.0*(pxx*c-px**2.0*s) + pxx*c-px**2.0*s + x*(pxxx*c-3.0*pxx*px*s-px**3.0*c) - y*(pxxx*s+3.0*pxx*px*c-px**3.0*s);
-    fxxy=-(pxx*s+px**2.0*c);  //2.0*(pxy*c-px*py*s) - (pxx*s+px**2.0*c) + x*(pxxy*c-pxx*py*s-2.0*pxy*px*s-px**2.0*py*c) - y*(pxxy*s+pxx*py*c-2.0*pxy*px*c-px**2.0*py*s);
-    fxyy=0.0;//-2.0*(pxy*s+px*py*c) + pyy*c-py**2.0*s - y*(pxyy*s+pyy*px*c+2.0*pxy*py*c-py**2.0*px*s) + x*(pxyy*c-pyy*px*s-2.0*pxy*py*s-py**2.0*px*c);
-    fyyy=0.0;//-2.0*(pyy*s+py**2.0*c) - (pyy*s+py**2.0*c) - y*(pyyy*s+3.0*pyy*py*c-py**3.0*s) + x*(pyyy*c-3.0*pyy*py*s-py**3.0*c);
+    fy=1.0;
+    //let psi = angle(pos, t, params);
+    //let c=cos(psi), s=sin(psi);
+    //let x=pos.x, y=pos.y;
+    //let [px, pxx, pxxx, py, pyy, pyyy, pxy, pxxy, pxyy]=angleSpatialDerivatives(pos, t);
+//
+    //fx=s + px*(x*c - y*s);
+    //fy=c;//c + x*py*c - y*py*s;
+//
+    //fxx=2.0*px*c + x*(pxx*c-px**2.0*s) - y*(pxx*s+px**2.0*c);
+    //fxy=-px*s;//py*c-px*s + x*(pxy*c-px*py*s) - y*(pxy*s+px*py*c);
+    //fyy=0.0; //-2.0*py*s - y*(pyy*s+py**2.0*c) + x*(pyy*c-py**2.0*s);
+//
+    //fxxx=2.0*(pxx*c-px**2.0*s) + pxx*c-px**2.0*s + x*(pxxx*c-3.0*pxx*px*s-px**3.0*c) - y*(pxxx*s+3.0*pxx*px*c-px**3.0*s);
+    //fxxy=-(pxx*s+px**2.0*c);  //2.0*(pxy*c-px*py*s) - (pxx*s+px**2.0*c) + x*(pxxy*c-pxx*py*s-2.0*pxy*px*s-px**2.0*py*c) - y*(pxxy*s+pxx*py*c-2.0*pxy*px*c-px**2.0*py*s);
+    //fxyy=0.0;//-2.0*(pxy*s+px*py*c) + pyy*c-py**2.0*s - y*(pxyy*s+pyy*px*c+2.0*pxy*py*c-py**2.0*px*s) + x*(pxyy*c-pyy*px*s-2.0*pxy*py*s-py**2.0*px*c);
+    //fyyy=0.0;//-2.0*(pyy*s+py**2.0*c) - (pyy*s+py**2.0*c) - y*(pyyy*s+3.0*pyy*py*c-py**3.0*s) + x*(pyyy*c-3.0*pyy*py*s-py**3.0*c);
   }
 
   if (surface_representations[0] == 'snake_sinus'){

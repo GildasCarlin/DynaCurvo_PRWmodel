@@ -313,7 +313,7 @@ def plot_critical(data, y, param, r2, ax, palette, plot_legend=False, xticks = [
 must_be_int = ['Surface Index', 'Number of Cells']
 
 substrate_regime="dyna"
-study="DSC_Jacob_Rota_w_U"
+study="test_new_surfaces"
 
 
 
