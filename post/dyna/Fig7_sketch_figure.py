@@ -139,6 +139,10 @@ def plot_traj(metadata, data, N, ax, xticks, yticks):
     
     # extract trajectories to plot
     data_to_plot = data[data['cell'].isin(IDlist)].copy()
+    
+    # check rectangle position
+    #data_to_plot=data_to_plot[data_to_plot["frame"]==0]
+    #print(data_to_plot)
  
     sns.scatterplot(data=data_to_plot, 
                     x='x', 
@@ -151,7 +155,10 @@ def plot_traj(metadata, data, N, ax, xticks, yticks):
                     )
     #
 
-    ax.text(0.12, 0.55, path[len(substrate_regime)+len(study)+len("assets")+3:-1-len("data.txt")], transform=ax.transAxes, fontsize=20)
+    rect=mpatches.Rectangle([-0.2, -0.2], width=0.4, height=0.4, ec='deeppink', ls="--", alpha=1., fill=0, lw=4, zorder=2)
+    ax.add_patch(rect)
+
+    ax.text(0.12, 0.8, path[len(substrate_regime)+len(study)+len("assets")+3:-1-len("data.txt")], transform=ax.transAxes, fontsize=20)
     
     ax.get_legend().set_visible(False)
     ax.set_xlabel('x (mm)', fontsize=22)
@@ -313,14 +320,12 @@ def plot_critical(data, y, param, r2, ax, palette, plot_legend=False, xticks = [
 must_be_int = ['Surface Index', 'Number of Cells']
 
 substrate_regime="dyna"
-study="test_new_surfaces"
-
-
+study="snake"
 
 
 ## x and y axis
-xticks = [-2., 0., 2.]
-yticks = [-0.5, 0., 3.5]
+xticks = [-1., 0., 1.]
+yticks = [-1., 0., 1.]
 
 mapping_traj={1:ax1, 2:ax2, 3:ax3, 4:ax4, 5:ax5, 6:ax6, 7:ax7, 8:ax8}
 Nb_to_plot=60

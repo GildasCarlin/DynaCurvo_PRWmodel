@@ -18,6 +18,7 @@ uniform int surface;
 uniform float k;
 uniform float kc;
 uniform float ks;
+uniform float as;
 uniform float ksc;
 uniform float phi0;
 uniform float psi0;
@@ -27,6 +28,16 @@ uniform float s;
 uniform int num_angles;
 uniform vec3 temporal_angle[MAX_ANGLES];
 
+
+float Heaviside(float y, float m){
+  if(y>0.0){
+    return 1.0;
+  }else if(y<0.0){
+    return 0.0;
+  }else{
+    return m;
+  }
+}
 
 float angle(float x, float y){
   float psi = psi0;
@@ -54,24 +65,19 @@ float phase(float x, float y){
     return phi0 - kc*t;
   }
 
-  if (surface==3){  // convr_sinus
-    return phi0 + kc*t + w*pow(x, 2.0);
+  if (surface==3){
+    float X=abs(x);
+    float U=Heaviside(X-psi0, 0.0);
+    return phi0 + kc*t + (1.0-U)*w*pow(X, 2.0) + U*w*psi0*(2.0*X-psi0);
+    //return phi0 + kc*t + w*pow(x, 2.0);
   }
 
   if (surface==4){  // snake_sinus
-    return sin(ks*y + ksc*t);
+    return as*sin(ks*y + ksc*t);
   }
 }
 
-float Heaviside(float y, float m){
-  if(y>0.0){
-    return 0.0;
-  }else if(y<0.0){
-    return 1.0;
-  }else{
-    return m;
-  }
-}
+
 
 float surface_equation(float x, float y){
   // x and y are in the shader frame, they are transformed in the js frame 

@@ -63,11 +63,13 @@ function phase(pos, t){
   }
 
   if (surface_representations[0]=="convr_sinus"){
-    return phi0+kc*t+w*pos.x**2.0;
+    let X=abs(pos.x);
+    let U=HeavisideStepFunction(X-psi0);
+    return phi0+kc*t + (1.0-U)*w*X**2.0 + U*w*psi0*(2.0*X-psi0);
   }
 
   if (surface_representations[0]=="snake_sinus"){
-    return sin(ks*pos.y + ksc*t);
+    return as*sin(ks*pos.y + ksc*t);
   }
 }
 
@@ -75,15 +77,18 @@ function phaseSpatialDerivatives(pos, t){
   let [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy] = new Array(9).fill(0.0);
 
   if (surface_representations[0]=="convr_sinus"){
-    fx=2.0*w*pos.x;
-    fxx=2.0*w;
+    let X=abs(pos.x);
+    let U=HeavisideStepFunction(X-psi0);
+
+    fx=Math.sign(pos.x)*2.0*w*((1.0-U)*X + U*psi0);
+    fxx=2.0*w*(1.0-U);
   }
   
   if (surface_representations[0]=="snake_sinus"){
     let arg=ks*pos.y+ksc*t;
-    fy=ks*cos(arg);
-    fyy=-1.0*ks**2.0*sin(arg);
-    fyyy=-1.0*ks**3.0*cos(arg);
+    fy=as*ks*cos(arg);
+    fyy=-1.0*as*ks**2.0*sin(arg);
+    fyyy=-1.0*as*ks**3.0*cos(arg);
   }
 
   return [fx, fxx, fxxx, fy, fyy, fyyy, fxy, fxxy, fxyy];

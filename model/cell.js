@@ -107,6 +107,13 @@ class Cell {
       MatrixVectorProduct(this.Global_Diffusion_Matrix, getRandomVector()).mult(Math.sqrt(dt))
     );
 
+    //let height=substrate(this.position, t, angleParams);
+    //let [gradf, gradpf]=gradCurvature(this.position, t, angleParams);
+    //console.log("--cell.js--");
+    //console.log("cell height:", height.toFixed(5));
+    //drawVector(this.position.x, this.position.y, gradf.copy().mult(10000), 'red');
+
+
     //-------------------------------------------- velocity integration to get cell position
     this.position.add(this.velocity.copy().mult(dt));
   }
@@ -141,27 +148,27 @@ class Cell {
     return w.mult(this.f_mag);
   }
 
-  getPsiStatic(pos, pol, t){
-    // not finished
-    // this function returns the contribution of f_ext caused by the static curvature. The formulation is continuous
-    if (meanCurvature(pos, t, angleParams)<0.0){
-      this.f=createVector(0.0, 0.0);
-    } else {                                
-      let [e1, e2] = gradCurvature(pos, t, angleParams);
-      let f_d = Math.abs(this.Vmean - this.central_V_flat);
-
-      // is the cell polarized along +e2 (True) or -e2 (False) ?
-      if (pol.dot(e2)<0.0){
-        e2.mult(-1.0);
-      }
-      let equilibrium=NormalizeVector(e2).mult(f_d);
-
-      this.f_mag -= dt/this.tau_stat * (this.f_mag-f_d);          
-      this.f_ang -= dt/this.tau_stat * (this.f_ang-createVector(1.0, 0.0).angleBetween(equilibrium)); 
-      this.f=createVector(Math.cos(this.f_ang), Math.sin(this.f_ang)).mult(this.f_mag);
-   }
-   return this.f;
-  }
+  //getPsiStatic(pos, pol, t){
+  //  // not finished
+  //  // this function returns the contribution of f_ext caused by the static curvature. The formulation is continuous
+  //  if (meanCurvature(pos, t, angleParams)<0.0){
+  //    this.f=createVector(0.0, 0.0);
+  //  } else {                                
+  //    let [e1, e2] = gradCurvature(pos, t, angleParams);
+  //    let f_d = Math.abs(this.Vmean - this.central_V_flat);
+//
+  //    // is the cell polarized along +e2 (True) or -e2 (False) ?
+  //    if (pol.dot(e2)<0.0){
+  //      e2.mult(-1.0);
+  //    }
+  //    let equilibrium=NormalizeVector(e2).mult(f_d);
+//
+  //    this.f_mag -= dt/this.tau_stat * (this.f_mag-f_d);          
+  //    this.f_ang -= dt/this.tau_stat * (this.f_ang-createVector(1.0, 0.0).angleBetween(equilibrium)); 
+  //    this.f=createVector(Math.cos(this.f_ang), Math.sin(this.f_ang)).mult(this.f_mag);
+  // }
+  // return this.f;
+  //}
 
   getPsiWave(pos, t){
     let W = this.From_global_to_local(phaseVelocity(pos, t, angleParams), t);
