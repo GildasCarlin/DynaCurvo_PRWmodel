@@ -99,6 +99,7 @@ class Cell {
     this.f_ext=this.From_local_to_global(this.f_ext, t);                
 
     //-------------------------------------------- velocity computation
+
     this.velocity = this.velocity.add(
       MatrixVectorProduct(this.getJacobianMatrix(this.position, t), this.velocity).mult(dt*this.q)
     ).sub(
@@ -107,6 +108,8 @@ class Cell {
       MatrixVectorProduct(this.Global_Diffusion_Matrix, getRandomVector()).mult(Math.sqrt(dt))
     );
 
+    
+    
     //let height=substrate(this.position, t, angleParams);
     //let [gradf, gradpf]=gradCurvature(this.position, t, angleParams);
     //console.log("--cell.js--");
@@ -175,7 +178,7 @@ class Cell {
     let Wspeed = W.mag();
 
     // target velocity
-    let s = Wspeed / (1.0+(Wspeed/this.Vmax)**3.0);
+    let s = Wspeed / (1.0+(Wspeed/this.Vmean)**3.0);
 
     this.beta -= dt/this.tau_dyna * (this.beta-s);       // update beta
     return NormalizeVector(W).mult(this.beta);

@@ -87,7 +87,7 @@ plt.rcParams.update({'font.size': 50})
 # ================================================================================================================
 # ================================================================================================================
 
-def plot_traj(metadata, data, N, mapping, xticks, yticks):
+def plot_traj(metadata, data, N, mapping, xticks, yticks, center=True):
 
     ## random cells id to plot
     IDlist = np.random.choice(data['cell'].unique(), size=N, replace=False)
@@ -120,53 +120,59 @@ def plot_traj(metadata, data, N, mapping, xticks, yticks):
     ax.set_ylim(yticks[0], yticks[-1])
 
     if mapping == ax_mapping_traj_NS:
-        ax.text(.5*(xticks[0]+xticks[-1]), 3.7, 
+        ax.text(.5, 1.05, 
             r'$\bf \lambda$={}µm, $\bf c$={}µm/s, $\bf T$=20min'.format(int(wl), c), 
-            fontsize=20, fontweight='bold', va='center', ha='center'
+            fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
             )
         
     if ax == ax_traj1:
-        ax.text(-3., .5*(yticks[0]+yticks[-1]), 
+        ax.text(-.25, .5, 
                 r"NDSC cells $\bf f_{dyna}=0$", 
-                rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center'
+                rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
 
-        ax.arrow(-1.5, .3, 0., 1.8, width=.09, color='red')
-        ax.text(-1.2, 1.3, 
+        ax.arrow(0.1, .3, 0., 0.4, width=.04, head_length=.1, color='red', transform=ax.transAxes, length_includes_head=True)
+        ax.text(0.18, 0.5, 
                 r"Wave propagation",
-                color='red', rotation = 'vertical', fontsize=20, fontweight='bold', va='center', ha='center'
+                color='red', rotation = 'vertical', fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
 
-        ax.arrow(-1.3, 3.3, -0.5, 0., width=.07, color='red', length_includes_head=True)
-        ax.arrow(-1.3, 3.3, 0.7, 0., width=.07, color='red', length_includes_head=True)
-        ax.text(-1.2, 3.1, 
+        ax.arrow(.2, 0.9, -0.15, 0., width=.04, head_length=.08, color='red', length_includes_head=True, transform=ax.transAxes)
+        ax.arrow(.2, 0.9, 0.15, 0., width=.04, head_length=.08, color='red', length_includes_head=True, transform=ax.transAxes)
+        ax.text(0.2, 0.8, 
                 r"Grooves axis",
-                color='red', rotation = 'horizontal', fontsize=20, fontweight='bold', va='center', ha='center'
+                color='red', rotation = 'horizontal', fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
     #
 
+    if center:
+        ax.scatter([0.0], [0.0], s=200, color='deeppink')
+    else:
+        rect=mpatches.Rectangle([-0.2, -0.2], width=0.4, height=0.4, ec='deeppink', ls="--", alpha=1., fill=0, lw=4, zorder=2)
+        ax.add_patch(rect)
+
     if ax == ax_traj5:
-        ax.text(-3., .5*(yticks[0]+yticks[-1]), 
+        ax.text(-.25, .5, 
                 r"DSC cells $\bf f_{dyna}\neq 0$", 
-                rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center'
+                rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
         
-        ax.arrow(-1.5, .3, 0., 1.8, width=.09, color='red')
-        ax.text(-1.2, 1.3, 
+        ax.arrow(0.1, .3, 0., 0.4, width=.04, head_length=.1, color='red', transform=ax.transAxes, length_includes_head=True)
+        ax.text(0.18, 0.5, 
                 r"Wave propagation",
-                color='red', rotation = 'vertical', fontsize=20, fontweight='bold', va='center', ha='center'
+                color='red', rotation = 'vertical', fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
 
-        ax.arrow(-1.3, 3.3, -0.5, 0., width=.07, color='red', length_includes_head=True)
-        ax.arrow(-1.3, 3.3, 0.7, 0., width=.07, color='red', length_includes_head=True)
-        ax.text(-1.2, 3.1, 
+        ax.arrow(.2, 0.9, -0.15, 0., width=.04, head_length=.08, color='red', length_includes_head=True, transform=ax.transAxes)
+        ax.arrow(.2, 0.9, 0.15, 0., width=.04, head_length=.08, color='red', length_includes_head=True, transform=ax.transAxes)
+        ax.text(0.2, 0.8, 
                 r"Grooves axis",
-                color='red', rotation = 'horizontal', fontsize=20, fontweight='bold', va='center', ha='center'
+                color='red', rotation = 'horizontal', fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
 #
@@ -233,7 +239,7 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
     elif quantity=='vd':
         infos={'y_label1':'Cell speed (µm/s)',
         }
-        ax1.set_ylim(bottom=0., top=5.)
+        ax1.set_ylim(bottom=0., top=4.)
 
     elif quantity=='r_d':
         infos={'y_label1':r'$r_d$ ',
@@ -241,13 +247,13 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
         ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
         ax1.axhline(y=1., linewidth = 2, color='#8C0335', linestyle='--')
         #ax1.margins(y=.2)
-        ax1.set_ylim(bottom=-2.5, top=2.)
+        ax1.set_ylim(bottom=-1.6, top=1.5)
     
     elif quantity=='last_y':
         infos={'y_label1':r'Cell position at $T$=20min (mm)',
         }
         ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
-        ax1.set_ylim(bottom=-.5, top=4.)
+        ax1.set_ylim(bottom=-.25, top=1.5)
     #
         
     # plot distributions
@@ -284,63 +290,92 @@ def add_stat(ax, eff_size, sign=4*['**'], x=[.12, .37, .62, .87], y=4*[.955], si
     #
 #
 
+def format_traj(data, center=False, convert=True):
+    # trajectory are centered at origin.
+    if center:
+        data[['x', 'y']] -= data.groupby('cell')[['x', 'y']].transform('first')
+        #for i in data['cell'].unique():
+        #    cell_i = data.loc[data['cell']==i,['x','y']].copy()
+        #    data.loc[data['cell']==i,['x', 'y']] -= cell_i.iloc[0]
+    #
+
+    # js frame vs python frame: the y-axis is reversed
+    data['y'] *= -1.0
+
+    # convert µm to mm
+    if convert:
+        data[['x', 'y']] /= 1000.0
+#
+
+
 # ================================================================================================================
 # ================================================================================================================
 #                                                    User interface
 # ================================================================================================================
 # ================================================================================================================
 
+# study
+substrate_regime="dyna"  # dyna or static
+NDSC_study="NDSC_RightSinus_20min_VariousCelerity"
+DSC_study="DSC_RightSinus_20min_VariousCelerity"
+# assets
+NDSC_assets=os.path.join(os.getcwd(), substrate_regime, "assets", NDSC_study)
+DSC_assets=os.path.join(os.getcwd(), substrate_regime, "assets", DSC_study)
+
+mapping_path_assumption={"NDSC":NDSC_assets, "DSC":DSC_assets}
+
 ## nb oc cell trak to plot
-NtoPlot=30
+NtoPlot=60
 
 ## metadada
 wavelength = 20.
 dt = 15.
 
 ## list of wave celerity to plot distributions
-celerities = [.1, .6, 3., 10.]
+celerities = [.1, .7, .9, 5.]
 
 ## list of frames to plot barycenters
 times = [10, 40, 80]
 
 # mapping between simulation parameters and ax to plot traj
 ax_mapping_traj_NS = {
-    (wavelength, .1): ax_traj1,
-    (wavelength, .6): ax_traj2,
-    (wavelength, 3.): ax_traj3,
-    (wavelength, 10.):ax_traj4
+    (wavelength, celerities[0]): ax_traj1,
+    (wavelength, celerities[1]): ax_traj2,
+    (wavelength, celerities[2]): ax_traj3,
+    (wavelength, celerities[3]):ax_traj4
 }
 
 ax_mapping_traj_S = {
-    (wavelength, .1): ax_traj5,
-    (wavelength, .6): ax_traj6,
-    (wavelength, 3.): ax_traj7,
-    (wavelength, 10.):ax_traj8
+    (wavelength, celerities[0]): ax_traj5,
+    (wavelength, celerities[1]): ax_traj6,
+    (wavelength, celerities[2]): ax_traj7,
+    (wavelength, celerities[3]):ax_traj8
 }
 
 ax_mapping_baryc_NS = {
-    (wavelength, .1): (ax_ins1, True),
-    (wavelength, .6): (ax_ins2, False),
-    (wavelength, 3.): (ax_ins3, False),
-    (wavelength, 10.):(ax_ins4, False)
+    (wavelength, celerities[0]): (ax_ins1, True),
+    (wavelength, celerities[1]): (ax_ins2, False),
+    (wavelength, celerities[2]): (ax_ins3, False),
+    (wavelength, celerities[3]):(ax_ins4, False)
 }
 
 ax_mapping_baryc_S = {
-    (wavelength, .1): (ax_ins5, True),
-    (wavelength, .6): (ax_ins6, False),
-    (wavelength, 3.): (ax_ins7, False),
-    (wavelength, 10.):(ax_ins8, False)
+    (wavelength, celerities[0]): (ax_ins5, True),
+    (wavelength, celerities[1]): (ax_ins6, False),
+    (wavelength, celerities[2]): (ax_ins7, False),
+    (wavelength, celerities[3]):(ax_ins8, False)
 }
 
 # export figure or not
 save = True
+path_to_save=os.path.join(os.getcwd(), substrate_regime, "traj_analysis.svg")
 
 ### ticks for traj plot
-xticks_NS = [-2., -1., 0., 1., 2.]
-yticks_NS = [-.5, 0., 1., 2., 3.5]
+xticks_NS = [-1., 0., 1.]
+yticks_NS = [-.25, 0., 1.75]
 
-xticks_S = [-2., -1., 0., 1., 2.]
-yticks_S = [-.5, 0., 1., 2., 3.5]
+xticks_S = [-1., 0., 1.]
+yticks_S = [-.25, 0., 1.75]
 #
 
 ### palettes de couleur
@@ -355,41 +390,39 @@ palette_for_assumption = ['#E1BE6A', '#40B0A6']
 # ================================================================================================================
 # ================================================================================================================
 
-root = os.getcwd()
-
 print('\n------------------------------------ get general indicators')
 print('---------------------- read data')
 
 #### NS
 assumption = 'NDSC'
-last_NS = pd.read_csv(root + "\\cell_is_not_surfer\\analysis_results\\global\\last.csv")
+last_NS = pd.read_csv(NDSC_assets + '\\' + "last.csv")
 last_NS = last_NS[last_NS['celerity'].isin(celerities)]
 last_NS = last_NS[last_NS['wavelength']==wavelength]
 last_NS.insert(0, 'assumption', len(last_NS) * [assumption])
 
-dx_NS = pd.read_csv(root + "\\cell_is_not_surfer\\analysis_results\\global\\dx.csv")
+dx_NS = pd.read_csv(NDSC_assets + '\\' + "dx.csv")
 dx_NS = dx_NS[dx_NS['celerity'].isin(celerities)]
 dx_NS = dx_NS[dx_NS['wavelength']==wavelength]
 dx_NS.insert(0, 'assumption', len(dx_NS) * [assumption])
 
-vd_NS = pd.read_csv(root + "\\cell_is_not_surfer\\analysis_results\\global\\vd.csv")
+vd_NS = pd.read_csv(NDSC_assets + '\\' + "vd.csv")
 vd_NS = vd_NS[vd_NS['celerity'].isin(celerities)]
 vd_NS = vd_NS[vd_NS['wavelength']==wavelength]
 vd_NS.insert(0, 'assumption', len(vd_NS) * [assumption])
 
 #### S
 assumption = 'DSC'
-last_S = pd.read_csv(root + "\\cell_is_surfer\\analysis_results\\global\\last.csv")
+last_S = pd.read_csv(DSC_assets + '\\' + "last.csv")
 last_S = last_S[last_S['celerity'].isin(celerities)]
 last_S = last_S[last_S['wavelength']==wavelength]
 last_S.insert(0, 'assumption', len(last_S) * [assumption])
 
-dx_S = pd.read_csv(root + "\\cell_is_surfer\\analysis_results\\global\\dx.csv")
+dx_S = pd.read_csv(DSC_assets + '\\' + "dx.csv")
 dx_S = dx_S[dx_S['celerity'].isin(celerities)]
 dx_S = dx_S[dx_S['wavelength']==wavelength]
 dx_S.insert(0, 'assumption', len(dx_S) * [assumption])
 
-vd_S = pd.read_csv(root + "\\cell_is_surfer\\analysis_results\\global\\vd.csv")
+vd_S = pd.read_csv(DSC_assets + '\\' + "vd.csv")
 vd_S = vd_S[vd_S['celerity'].isin(celerities)]
 vd_S = vd_S[vd_S['wavelength']==wavelength]
 vd_S.insert(0, 'assumption', len(vd_S) * [assumption])
@@ -445,20 +478,15 @@ for celerity in celerities:
 
     ######## récupérér les trajectoires ...
     #### NS
-    traj_NS = pd.read_csv(root + "\\cell_is_not_surfer\\lambda=" + str(wavelength) + "\\c=" + str(celerity) + "\\data.txt", comment='#')
+    traj_NS=pd.read_csv(os.path.join(NDSC_assets, "L="+str(wavelength), "c="+str(celerity), "data.txt"), comment='#')
 
     #### S
-    traj_S =  pd.read_csv(root + "\\cell_is_surfer\\lambda=" + str(wavelength) + "\\c=" + str(celerity) + "\\data.txt", comment='#')
+    traj_S= pd.read_csv(os.path.join(DSC_assets, "L="+str(wavelength), "c="+str(celerity), "data.txt"), comment='#')
 
+       
     print('---------------------- treat traj')
-    ######## ... les convertir
-    #### invert y-axis
-    traj_NS["y"] *= -1.
-    traj_S["y"]  *= -1.
-
-    #### convert µm to mm
-    traj_NS[['x', 'y']] /= 1000.
-    traj_S[['x', 'y']]  /= 1000.
+    format_traj(traj_NS, center=True)
+    format_traj(traj_S, center=True)
 
     ######## scatter les traj
     print("---------------------- plot traj")
@@ -503,13 +531,13 @@ for celerity in celerities:
            )
 #
 
-add_stat(ax1, eff_size={'ES':r'$A_w$', 'values':[0.15, 0.05, 0., 0.]}, y=[.59]+3*[.955])        # Cohen's d=[1.4, 2., 47., 10.]
-add_stat(ax2, eff_size={'ES':r'$A_w$', 'values':[0.33, 0.21, 0., 0.]})                          # Cohen's d=[0.6, 1.2, 14., 5.2]
-add_stat(ax3, eff_size={'ES':r'$A_w$', 'values':[0.52, 0.41, 0.05, 0.26]}, y=[.59]+3*[.955])    # Cohen's d=[0.04, 0.26, 3.1, 0.8]
-add_stat(ax4, eff_size={'ES':r'$A_w$', 'values':[0.15, 0.05, 0., 0.]})                          # Cohen's d=[1.4, 2., 47., 10.]
+add_stat(ax1, eff_size={'ES':r'$A_w$', 'values':[0.23, 0.07, 0.08, 0.43]}, y=[.59]+3*[.955], sign=3*["**"]+["*"])                   # Cohen's d=[1.4, 2., 47., 10.]
+add_stat(ax2, eff_size={'ES':r'$A_w$', 'values':[0.40, 0.83, 0.89, 0.51]}, sign=3*["**"]+["NS"])                                     # Cohen's d=[0.6, 1.2, 14., 5.2]
+add_stat(ax3, eff_size={'ES':r'$A_w$', 'values':[0.51, 0.36, 0.31, 0.5]}, y=[.59]+3*[.955], sign=3*["**"]+["NS"])                   # Cohen's d=[0.04, 0.26, 3.1, 0.8]
+add_stat(ax4, eff_size={'ES':r'$A_w$', 'values':[0.23, 0.07, 0.08, 0.43]}, sign=3*["**"]+["*"])                                     # Cohen's d=[1.4, 2., 47., 10.]
 
 
 if save:
     print('\n------------------------------------ export figure:')
-    plt.savefig(root + '\\traj_analysis.svg')
+    plt.savefig(path_to_save)
 #

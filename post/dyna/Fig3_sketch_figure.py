@@ -78,11 +78,11 @@ plt.rcParams.update({'font.size': 50})
 # ================================================================================================================
 # ================================================================================================================
 
-def plot_bary_by_c(data, ax, palette, plot_label=True, plot_legend=True, plot_sdyna=False):
+def plot_bary_by_c(data, y, ax, palette, plot_label=True, plot_legend=True, plot_sdyna=False):
 
     sns.scatterplot(data=data,
                     x='celerity',
-                    y='last_y',
+                    y=y,
                     hue='wavelength',
                     ax=ax,
                     palette=palette,
@@ -92,18 +92,18 @@ def plot_bary_by_c(data, ax, palette, plot_label=True, plot_legend=True, plot_sd
     
     if ax == ax1:
         y0, y1 = ax.get_ylim()
-        ax.text(-10., .5*(y0+y1), 
+        ax.text(-.25, .5, 
                 r"NDSC cells $\bf f_{dyna}=0$", 
-                rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center'
+                rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
     #
 
     if ax == ax5:
         y0, y1 = ax.get_ylim()
-        ax.text(-10., .5*(y0+y1), 
+        ax.text(-.25, .5, 
                 r"DSC cells $\bf f_{dyna}\neq0$", 
-                rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center'
+                rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
     #
@@ -117,6 +117,8 @@ def plot_bary_by_c(data, ax, palette, plot_label=True, plot_legend=True, plot_sd
         ax.set_ylabel(r'')
     #
 
+    ax.set_ylim(top=.9)
+
     if plot_legend:
         handles, labels = plt.gca().get_legend_handles_labels()
         mpatch1 = mpatches.Patch(facecolor=palette[0], label=r'20', edgecolor='black')
@@ -127,7 +129,8 @@ def plot_bary_by_c(data, ax, palette, plot_label=True, plot_legend=True, plot_sd
         ax.tick_params(axis='both', which='major', labelsize=20)
 #
 
-def plot_central(data, quantity, ax, palette, plot_label=True, plot_legend=True, plot_sdyna=False, x_sdyna=30., remove_ylabel=False):
+def plot_central(data, y, quantity, ax, palette, plot_label=True, plot_legend=True, plot_sdyna=False, x_sdyna=4., n=3., remove_ylabel=False):
+    
     # specify options
     if quantity=='dx':
         infos={'y_label':r'$\overline{D}_{\perp}$'}
@@ -140,16 +143,23 @@ def plot_central(data, quantity, ax, palette, plot_label=True, plot_legend=True,
 
     if quantity=='vd':
         infos={'y_label':r'$\overline{v}$ (µm/s)'}
+        ax.set_ylim(bottom=0.)
     #
 
-    if quantity=='r_d':
+    if quantity=='rd':
         infos={'y_label':r'$\overline{r}_d$'}
         ax.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
+        ax.set_ylim(top=1., bottom=-0.1)
     #
 
     if plot_sdyna:
+        Vm={80.:0.5, 40.:.56,20.:0.6}
         x=np.linspace(0., x_sdyna, 70)
-        ax.plot(x, x/((x/4.)**3.+1.), color='black', linewidth=3.)
+        count=0
+        for L in data["wavelength"].unique():
+            ax.axvline(x=(n-1.)**(-1./n), color=palette[count])
+            #ax.plot(x, x/((x/Vm[L])**n+1.), linewidth=3., color=palette[count])
+            count+=1
     #
 
     if remove_ylabel:
@@ -158,7 +168,7 @@ def plot_central(data, quantity, ax, palette, plot_label=True, plot_legend=True,
 
     sns.scatterplot(data=data,
                     x='celerity',
-                    y=quantity,
+                    y=y,
                     hue='wavelength',
                     ax=ax,
                     palette=palette,
@@ -175,6 +185,7 @@ def plot_central(data, quantity, ax, palette, plot_label=True, plot_legend=True,
         ax.set_xlabel(r'')
         ax.set_ylabel(r'')
     #
+    #ax.set_xlim(left=0., right=3.)
 
     if plot_legend:
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -192,40 +203,51 @@ def plot_central(data, quantity, ax, palette, plot_label=True, plot_legend=True,
 # ================================================================================================================
 # ================================================================================================================
 
+# study
+substrate_regime="dyna"  # dyna or static
+NDSC_study="NDSC_RightSinus_20min_VariousCelerity"
+DSC_study="DSC_RightSinus_20min_VariousCelerity"
+
+# assets
+NDSC_assets=os.path.join(os.getcwd(), substrate_regime, "assets", NDSC_study)
+DSC_assets=os.path.join(os.getcwd(), substrate_regime, "assets", DSC_study)
+
+mapping_path_assumption={"NDSC":NDSC_assets, "DSC":DSC_assets}
+
 ## metadada
-assumptions = ['cell_is_not_surfer', 'cell_is_surfer']
+assumptions = ['NDSC', 'DSC']
 wavelengths = [20., 40., 80.]
-max_celerity = plot_or_not={'cell_is_not_surfer':2., 'cell_is_surfer':5.}
+max_celerity ={'NDSC':2.5, 'DSC':2.5}
 dt = 15.
 
 # mapping between assumption and quantity and axes
-mapping={('cell_is_not_surfer', 'b'):ax1,
-         ('cell_is_not_surfer', 'dx'):ax2,
-         ('cell_is_not_surfer', 'vd'):ax3,
-         ('cell_is_not_surfer', 'r_d'):ax4,
-         ('cell_is_surfer', 'b'):ax5,
-         ('cell_is_surfer', 'dx'):ax6,
-         ('cell_is_surfer', 'vd'):ax7,
-         ('cell_is_surfer', 'r_d'):ax8
+mapping={('NDSC', 'b'):ax1,
+         ('NDSC', 'dx'):ax2,
+         ('NDSC', 'vd'):ax3,
+         ('NDSC', 'rd'):ax4,
+         ('DSC', 'b'):ax5,
+         ('DSC', 'dx'):ax6,
+         ('DSC', 'vd'):ax7,
+         ('DSC', 'rd'):ax8
          }
 
-mapping_ins={('cell_is_not_surfer', 'b'):ax_ins1,
-             ('cell_is_not_surfer', 'dx'):ax_ins2,
-             ('cell_is_not_surfer', 'vd'):ax_ins3,
-             ('cell_is_not_surfer', 'r_d'):ax_ins4,
-             ('cell_is_surfer', 'b'):ax_ins5,
-             ('cell_is_surfer', 'dx'):ax_ins6,
-             ('cell_is_surfer', 'vd'):ax_ins7,
-             ('cell_is_surfer', 'r_d'):ax_ins8
+mapping_ins={('NDSC', 'b'):ax_ins4,
+             ('NDSC', 'dx'):ax_ins2,
+             ('NDSC', 'vd'):ax_ins3,
+             ('NDSC', 'rd'):ax_ins1,
+             ('DSC', 'b'):ax_ins8,
+             ('DSC', 'dx'):ax_ins6,
+             ('DSC', 'vd'):ax_ins7,
+             ('DSC', 'rd'):ax_ins5
              }
 #
 
 # plot sdyna theorical expression
-plot_or_not={'cell_is_not_surfer':False, 'cell_is_surfer':True}
+plot_or_not={'NDSC':False, 'DSC':True}
 
 # export figure or not
 save = True
-path_to_save = 'wavelength_effect.svg'
+path_to_save=os.path.join(os.getcwd(), substrate_regime, "wavelength_effect.svg")
 
 
 ## platte de couleur 
@@ -246,89 +268,115 @@ root = os.getcwd()
 for assumption in assumptions:
     print('\n----------------------------------- treatment of ' + assumption)
     print('... open data')
-    path_to_last = root + '\\' + assumption + '\\analysis_results\\global\\central_last.csv'
-    path_to_dx =   root + '\\' + assumption + '\\analysis_results\\global\\central_dx.csv'
-    path_to_vd =   root + '\\' + assumption + '\\analysis_results\\global\\central_vd.csv'
+    
+    path_to_last = mapping_path_assumption[assumption] + '\\' + 'central_last.csv'
+    path_to_dx =   mapping_path_assumption[assumption] + '\\' + 'central_dx.csv'
+    path_to_vd =   mapping_path_assumption[assumption] + '\\' + 'central_vd.csv'
 
     data_last = pd.read_csv(path_to_last)
     data_dx =   pd.read_csv(path_to_dx)
     data_vd =   pd.read_csv(path_to_vd)
 
-    print('... sort by wavelength')
+    # format columns
+    data_last.rename(columns={"last_y":"last_y.mean", "last_y.1":"last_y.med", "last_y.2":"last_y.std", "r_d":"rd.mean", "r_d.1":"rd.med", "r_d.2":"rd.std"}, inplace=True)
+    data_last.dropna(inplace=True)
+    data_last[['last_y.mean', 'last_y.med', 'last_y.std', 'rd.mean', 'rd.med', 'rd.std']]=data_last[['last_y.mean', 'last_y.med', 'last_y.std', 'rd.mean', 'rd.med', 'rd.std']].astype("float")
+    
+    data_dx.rename(columns={"dx":"dx.mean", "dx.1":"dx.med", "dx.2":"dx.std"}, inplace=True)
+    data_dx.dropna(inplace=True)
+    data_dx[['dx.mean', 'dx.med', 'dx.std']]=data_dx[['dx.mean', 'dx.med', 'dx.std']].astype("float")
+
+    data_vd.rename(columns={"vd":"vd.mean", "vd.1":"vd.med", "vd.2":"vd.std"}, inplace=True)
+    data_vd.dropna(inplace=True)
+    data_vd[['vd.mean', 'vd.med', 'vd.std']]=data_vd[['vd.mean', 'vd.med', 'vd.std']].astype("float")
+
+    print('... sort by wavelength and celerity')
     data_last = data_last[data_last['wavelength'].isin(wavelengths)]
     data_dx =   data_dx[data_dx['wavelength'].isin(wavelengths)]
     data_vd =   data_vd[data_vd['wavelength'].isin(wavelengths)]
 
-    # µm -->  mm
-    data_last['last_y'] /= 1000. 
+    data_last = data_last[data_last['celerity'] <= max_celerity[assumption]]
+    data_dx =   data_dx[data_dx['celerity'] <=     max_celerity[assumption]]
+    data_vd =   data_vd[data_vd['celerity'] <=     max_celerity[assumption]]
 
-    if assumption=='cell_is_surfer':
-        for wl in data_last['wavelength'].unique():
-            f=data_last[data_last['wavelength']==wl]['r_d']
-            dx=data_last[data_last['wavelength']==wl]['celerity']
-            grad=np.gradient(f, dx)
-            idx=np.where(grad==grad.min())[0]
-            print('... min of gradient of rd\n', data_last.iloc[idx])
+    # µm -->  mm
+    data_last[['last_y.mean', 'last_y.med', 'last_y.std']] /= 1000.
+
+    #if assumption=='DSC':
+    #    for wl in data_last['wavelength'].unique():
+    #        f=data_last[data_last['wavelength']==wl]['rd.mean']
+    #        dx=data_last[data_last['wavelength']==wl]['celerity']
+    #        grad=np.gradient(f, dx)
+    #        idx=np.where(grad==grad.min())[0]
+    #        print('... min of gradient of rd\n', data_last.iloc[idx])
             
 
     print('... plot general indicators')
-    plot_bary_by_c(data_last, 
+    plot_bary_by_c(data_last, y='last_y.mean',
                    ax=mapping[(assumption, 'b')], 
                    palette=wl_palette,
                    plot_legend=False 
                    )
     
-    plot_central(data_dx, 'dx', 
+    plot_central(data_dx, y='dx.mean', 
+                 quantity='dx',
                  ax=mapping[(assumption, 'dx')], 
                  palette=wl_palette, 
                  plot_legend=True,
                  )
     
-    plot_central(data_vd, 'vd', 
+    plot_central(data_vd, y='vd.mean', 
+                 quantity='vd',
                  ax=mapping[(assumption, 'vd')], 
                  palette=wl_palette, 
                  plot_legend=False,
-                 plot_sdyna=plot_or_not[assumption]
+                 plot_sdyna=plot_or_not[assumption],
+                 x_sdyna=max_celerity[assumption],
+                 n=3.
                  )
     
-    plot_central(data_last, 'r_d', 
-                 ax=mapping[(assumption, 'r_d')], 
+    plot_central(data_last, y='rd.mean', 
+                 quantity='rd', 
+                 ax=mapping[(assumption, 'rd')], 
                  palette=wl_palette, 
                  plot_legend=False
                  )
     
     print('... plot insets')
-    # sort by celerity
-    data_last = data_last[data_last['celerity'] <= max_celerity[assumption]]
-    data_dx =   data_dx[data_dx['celerity'] <= max_celerity[assumption]]
-    data_vd =   data_vd[data_vd['celerity'] <= max_celerity[assumption]]
-
-    plot_bary_by_c(data_last, 
-                   ax=mapping_ins[(assumption, 'b')], 
-                   palette=wl_palette, 
-                   plot_label=False, 
-                   plot_legend=False,
-                   )
-    
-    plot_central(data_dx, 'dx', 
-             ax = mapping_ins[(assumption, 'dx')], 
-             palette=wl_palette,
-             plot_label=False, 
-             plot_legend=False,
-             remove_ylabel=True
-             )
-    
-    plot_central(data_vd, 'vd', 
-                 ax = mapping_ins[(assumption, 'vd')], 
-                 palette=wl_palette,
-                 plot_label=False, 
-                 plot_legend=False,
-                 plot_sdyna=plot_or_not[assumption],
-                 x_sdyna=max_celerity[assumption]
-                 )
-    
-    plot_central(data_last, 'r_d', 
-                 ax = mapping_ins[(assumption, 'r_d')], 
+    ## sort by celerity
+    #data_last = data_last[data_last['celerity'] <= max_celerity[assumption]]
+    #data_dx =   data_dx[data_dx['celerity'] <= max_celerity[assumption]]
+    #data_vd =   data_vd[data_vd['celerity'] <= max_celerity[assumption]]
+#
+    #plot_bary_by_c(data_last, y='last_y.mean',
+    #               ax=mapping_ins[(assumption, 'b')], 
+    #               palette=wl_palette, 
+    #               plot_label=False, 
+    #               plot_legend=False,
+    #               )
+    #
+    #plot_central(data_dx, y='dx.mean',
+    #             quantity='dx', 
+    #            ax = mapping_ins[(assumption, 'dx')], 
+    #            palette=wl_palette,
+    #            plot_label=False, 
+    #            plot_legend=False,
+    #            remove_ylabel=True
+    #            )
+    #
+    #plot_central(data_vd, y='vd.mean',
+    #             quantity='vd', 
+    #             ax = mapping_ins[(assumption, 'vd')], 
+    #             palette=wl_palette,
+    #             plot_label=False, 
+    #             plot_legend=False,
+    #             plot_sdyna=plot_or_not[assumption],
+    #             x_sdyna=max_celerity[assumption]
+    #             )
+    #
+    plot_central(data_last, y='rd.mean',
+                 quantity='rd', 
+                 ax = mapping_ins[(assumption, 'rd')], 
                  palette=wl_palette,
                  plot_label=False, 
                  plot_legend=False
@@ -338,5 +386,5 @@ for assumption in assumptions:
 
 if save:
     print('------------------------------------ export figure:')
-    plt.savefig(root + '\\' +  path_to_save)
+    plt.savefig(path_to_save)
 #

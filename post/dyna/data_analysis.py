@@ -129,6 +129,28 @@ def get_last_point(metadata, data):
 # ================================================================================================================
 # ================================================================================================================
 
+## ------------------------------------ folder and paths
+
+# study
+substrate_regime="dyna"  # dyna or static
+study="DSC_RightSinus_20min_VariousCelerity"
+
+# assets
+path_to_assets=os.path.join(os.getcwd(), substrate_regime, "assets", study)
+
+
+
+# list of metadata which must be integers
+must_be_int = ['Surface Index', 'Number of Cells']
+
+## list of wave celerity to plot distributions
+indiv=False
+c_list = [.1, .6, 3., 10.]
+
+## velocity mean or med
+vel_cent = 'mean'
+
+'''
 ## source    cell_is_surfer  /  cell_is_not_surfer  /  role_of_Vmax\\Vmax=...\\cell_is_surfer
 para1='tau_dyna'
 para1_value=24.0
@@ -138,12 +160,10 @@ assumption='cell_is_surfer'
 
 
 
-## velocity mean or med
-vel_cent = 'mean'
 
 
-# list of metadata which must be integers
-must_be_int = ['Surface Index', 'Number of Cells']
+
+
 
 ## list of wave celerity to plot distributions
 #if source=='cell_is_not_surfer'
@@ -155,7 +175,7 @@ if assumption=='cell_is_surfer':
 elif assumption=='cell_is_not_surfer':
     source = 'role_of_' + para1 + '\\' + para1 + '=' + str(para1_value) + '\\' + assumption
 #
-
+'''
 
 # ================================================================================================================
 # ================================================================================================================
@@ -164,7 +184,7 @@ elif assumption=='cell_is_not_surfer':
 # ================================================================================================================
 
 ## look for folders containing a data.csv to analyse
-files_to_analyse = search_files_to_analyse(os.getcwd() + '\\' + source)
+files_to_analyse = search_files_to_analyse(path_to_assets)
 
 ## data analysis
 dx_list, vd_list, last_list = [], [], []
@@ -182,7 +202,7 @@ for path in files_to_analyse:
 
     if indiv and wl==20. and c in c_list: 
         print('... export')
-        data.to_csv(source + '\\analysis_results\\traj\\c=' + str(c) + '.csv', index=False)
+        data.to_csv(path_to_assets + '\\' + 'c=' + str(c) + '.csv', index=False)
     #
 
     # computes dx trajectory bias and vd velocity distribution
@@ -202,26 +222,19 @@ dx_df = pd.DataFrame(dx_df)
 vd_df = pd.DataFrame(vd_df)
 last_df = pd.DataFrame(last_df)
 
-### get the MEAN or MEDIAN
-central_dx = dx_df.groupby(['wavelength', 'celerity']).mean().reset_index()
-
-if vel_cent=='mean':
-    central_vd = vd_df.groupby(['wavelength', 'celerity']).mean().reset_index()
-elif vel_cent=='med':
-    central_vd = vd_df.groupby(['wavelength', 'celerity']).median().reset_index()
-#
-
-central_last = last_df.groupby(['wavelength', 'celerity']).mean().reset_index()
+### get the stats
+central_dx = dx_df.groupby(['wavelength', 'celerity']).agg(["mean", "median", "std"]).reset_index()
+central_vd = vd_df.groupby(['wavelength', 'celerity']).agg(["mean", "median", "std"]).reset_index()
+central_last = last_df.groupby(['wavelength', 'celerity']).agg(["mean", "median", "std"]).reset_index()
 
 print('\n------------------------------------ global data export: ')
+dx_df.to_csv(path_to_assets + '\\' + 'dx.csv', index=False)
+vd_df.to_csv(path_to_assets + '\\' + 'vd.csv', index=False)
+last_df.to_csv(path_to_assets + '\\' + 'last.csv', index=False)
 
-dx_df.to_csv(source + '\\analysis_results\\global\\dx.csv', index=False)
-vd_df.to_csv(source + '\\analysis_results\\global\\vd.csv', index=False)
-last_df.to_csv(source + '\\analysis_results\\global\\last.csv', index=False)
-
-central_dx.to_csv(source + '\\analysis_results\\global\\central_dx.csv', index=False)
-central_vd.to_csv(source + '\\analysis_results\\global\\central_vd.csv', index=False)
-central_last.to_csv(source + '\\analysis_results\\global\\central_last.csv', index=False)
+central_dx.to_csv(path_to_assets + '\\' + 'central_dx.csv', index=False)
+central_vd.to_csv(path_to_assets + '\\' + 'central_vd.csv', index=False)
+central_last.to_csv(path_to_assets + '\\' + 'central_last.csv', index=False)
 
 
 
