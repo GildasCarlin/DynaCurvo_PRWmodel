@@ -168,9 +168,12 @@ def checkCelerityEffect(quantity, assumption):
         data_to_test = all_vd.copy()
 
     data_to_test = data_to_test[data_to_test['assumption']==assumption]
-    print(data_to_test[[factor, dependant_variable]].groupby(factor).median())
+    print("---------- summary of data")
+    print(data_to_test[[factor, dependant_variable]].groupby(factor).describe())
+    #print(data_to_test[[factor, dependant_variable]].groupby(factor).median())
+    #dx_df.groupby(['wavelength', 'celerity']).agg(["mean", "median", "std"]).reset_index()
 
-    print('---------------------- Kruskal-Wallis test')
+    print('\n---------------------- Kruskal-Wallis test')
     # compute kruskal wallis test
     stat = pg.kruskal(
         data = data_to_test,
@@ -361,8 +364,8 @@ celerity_effect=True
 assumption_effect=False
 
 # what to test
-quantity="vd"
-nature="DSC"
+quantity="last_y"
+nature="NDSC"
 
 # ================================================================================================================
 # ================================================================================================================

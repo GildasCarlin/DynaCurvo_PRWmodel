@@ -253,7 +253,7 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
         infos={'y_label1':r'Cell position at $T$=20min (mm)',
         }
         ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
-        ax1.set_ylim(bottom=-.25, top=1.5)
+        ax1.set_ylim(bottom=-.25, top=1.2)
     #
         
     # plot distributions

@@ -64,7 +64,7 @@ class Cell {
     this.cell_radius_max = 15.0;
 
     let [gradH, gradH_perp] = gradCurvature(this.position, 0.0, angleParams);    // local basis
-    this.k_angle=createVector(1.0, 0.0).angleBetween(gradH);
+    //this.k_angle=createVector(1.0, 0.0).angleBetween(gradH);
 
     //test
     this.V1=createVector(1.0, 1.0);
@@ -313,7 +313,22 @@ class Cell {
   }
   
   sauvegarde(t){
-    table_data.push(`${it_sauv}, ${t}, ${this.cellID}, ${this.position.x}, ${this.position.y}, ${this.k_angle}`);
+    // 
+    let wave_orientation=createVector(1.0, 0.0).angleBetween(phaseVelocity(this.position.copy(), t, angleParams));
+
+    // is the cell in front or behind the wave ? (cf. post)
+    let [e1, e2]=NormalizeVector(gradCurvature(this.position.copy(), t, angleParams));
+    let prod=NormalizeVector(this.velocity.copy()).dot(e1);
+
+    // let 
+    let H=meanCurvature(this.position.copy(), t, angleParams);
+
+    // 
+    console.log("-- print --");
+    console.log(" produit scalaire:", prod);
+    console.log(" mean curv:", H);
+
+    table_data.push(`${it_sauv}, ${t}, ${this.cellID}, ${this.position.x}, ${this.position.y}, ${wave_orientation}, ${prod}, ${H}`);
   }
   
 }

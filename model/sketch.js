@@ -219,7 +219,7 @@ function initTable(){
   table_data.push(`# Vmax=${parameters[9]}`);
   table_data.push(`# surf_assumption=${surf_assumption}`);
   table_data.push(`# curvature_assumption=${curv_assumption}`);
-  table_data.push('frame,time,cell,x,y, theta');
+  table_data.push('frame,time,cell,x,y,theta,v_dot_e1,meanCurvature');
   
   return table_data;
 }
@@ -275,8 +275,10 @@ function draw(){
   //let ym=0.0-c*timer_sec;
   //let posiM=createVector(xm, ym);
   //
-  //let xf=50.0, yf=0.0;
-  //let posiF=createVector(xf, yf);
+  let xf=50.0, yf=0.0;
+  let posiF=createVector(xf, yf);
+
+  let H=meanCurvature(posiF, timer_sec, angleParams);
 
   //push();
   //fill('red');
@@ -285,12 +287,12 @@ function draw(){
   //ellipse(0, 0, 10.0, 10.0);
   //pop();
 
-  //push();
-  //fill('black');
-  //stroke(0);
-  //translate(xf, yf);
-  //ellipse(0, 0, 10.0, 10.0);
-  //pop();
+  push();
+  fill('black');
+  stroke(0);
+  translate(xf, yf);
+  ellipse(0, 0, 10.0, 10.0);
+  pop();
 
   //let [gradf, gradpf]=gradCurvature(posiF, timer_sec, angleParams);
   //let [gradm, gradpm]=gradCurvature(posiM, timer_sec, angleParams);
@@ -301,7 +303,9 @@ function draw(){
   //drawVector(xf, yf, speedF.copy().mult(100), 'red');
   //drawVector(xm, ym, speedM.copy().mult(100), 'red');
 
-  //console.log("------------ dans sketch.js ---------------");
+  console.log("------------ dans sketch.js ---------------");
+  console.log("H:", H.toFixed(5));
+  console.log("H max:", (0.5*a*k**2.0).toFixed(5));
   //console.log("psi :", psi0*180.0/Math.PI);
   //console.log("cos, sin :", Math.cos(psi0).toFixed(3), Math.sin(psi0).toFixed(3));
   //console.log("heigth fixed point :", substrate(posiF, timer_sec, angleParams).toFixed(3));

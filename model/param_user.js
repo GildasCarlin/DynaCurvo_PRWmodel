@@ -50,12 +50,12 @@ let surface_title='right_sinus';
 
 let a=10.0;
 let lambda=80.0;
-let c=4.9;
+let c=0.7;
 let phi0=0.0;
 
 let w=0.0;
 let psi0=-Math.PI/2.0;//-Math.PI/2.0;//Math.PI/4.0;
-let angleParams=[];//[[Math.PI/4.0, w, 60.0]]; 
+let angleParams=[]; //[[Math.PI/4.0, w, 60.0]]; 
 let as = 1.25;
 let lambdas=40.0;
 
@@ -66,7 +66,7 @@ let lambdas=40.0;
 //-------------------------------------------------------------------------------------------------------
 
 // number of cells
-let nbCell=1;
+let nbCell=0;
 
 // central metric     median  /  mean
 let central_metric = 'mean';
@@ -93,7 +93,7 @@ let data=true;
 let file_name_data = 'data';
 
 // draw 
-let draw_cells=false;
+let draw_cells=true;
 let draw_traj = false;   // deprecated if nbCell>5
 
 // record screenshot video
