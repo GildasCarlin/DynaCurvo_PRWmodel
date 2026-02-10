@@ -22,6 +22,7 @@ import matplotlib.patches as mpatches
 from openturns.viewer import View
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
+from matplotlib.collections import LineCollection
 
 # ================================================================================================================
 # ================================================================================================================
@@ -150,8 +151,6 @@ def normalizeCurvature(df, surface="right_sinus", a=10., L=20., report=False):
 
     df["meanCurvature_hat"]=df["meanCurvature"] / maxH
 
-
-
     if report:
         print("\n-- report on curvature")
         print("maximal mean curvature on the surface (1/µm):", round(maxH, 3))
@@ -199,18 +198,19 @@ def plotCurvature(df, ax):
     ax.set_ylabel(ylabel="Density", fontsize=20)
 #
 
-def plotCurvatureVsTime(df, ax, N=10):
-    # number of traj to plot
-    #N=min(N, len(df["cell"].unique()))
+def plotVsTime(metadata, df, axs, N=10, rand=False):
 
+    spec={ax1:r"Normalized $H$", ax2:r"$\hat{v}\cdot \vec{e}_1$"}
     # traj to plot
-    #selected_id = random.sample(list(df["cell"].unique()), N)
     selected_id=[275, 26, 18, 264]
+    if rand:
+        N=min(N, len(df["cell"].unique()))
+        selected_id = random.sample(list(df["cell"].unique()), N)
     subdf=df[df["cell"].isin(selected_id)]
     
-    palette=sns.color_palette("deep", len(selected_id))
 
     # convert seconds to minutes
+    T=metadata["Simulation Duration"]/60.
     pos0 = subdf.columns.get_loc("time")
     subdf.insert(pos0+1, "time_min", subdf["time"] / 60.)
 
@@ -220,8 +220,8 @@ def plotCurvatureVsTime(df, ax, N=10):
     subdf["is_gap"] = (subdf["t_diff"] != 1) | subdf["t_diff"].isna()
     subdf["sequence_id"] = subdf.groupby("cell")["is_gap"].cumsum()
 
-    #print(subdf[subdf["cell"]==275][["cell", "frame", "t_diff", "is_gap", "sequence_id"]])
-
+    # plot
+    palette=sns.color_palette("deep", len(selected_id))
     count=0
     for cell in subdf["cell"].unique():
         cell_i=subdf[subdf["cell"]==cell]
@@ -238,17 +238,33 @@ def plotCurvatureVsTime(df, ax, N=10):
                          legend=False,
                          orient="y",
                          zorder=2,
-                         ax=ax
+                         ax=axs[0]
+                     )
+            
+            sns.lineplot(data=seq_i,
+                         x="v_dot_e1",
+                         y="time_min",
+                         color=palette[count],
+                         linewidth=5,
+                         markers=True,
+                         marker="o",
+                         markersize=8,
+                         legend=False,
+                         orient="y",
+                         zorder=2,
+                         ax=axs[1]
                      )
         count+=1
         #
     
-    ax.set_yticks([0., 5., 10., 15., 20.])
-    ax.set_xlim(left=-1., right=1.)
-    ax.set_ylim(bottom=0., top=20.)
-    ax.set_xlabel(xlabel=r"Normalized $H$", fontsize=20)
-    ax.set_ylabel(ylabel="Time (min)", fontsize=20)
-
+    
+    for ax in axs:
+        ax.set_yticks([0., .25*T, .5*T, .75*T, T])
+        ax.set_xlim(left=-1., right=1.)
+        ax.set_ylim(bottom=0., top=T)
+        ax.set_xlabel(xlabel=spec[ax], fontsize=20)
+        ax.set_ylabel(ylabel="Time (min)", fontsize=20)
+    #
 #
 
 def plotTimeAsFollower(df, ax, report=False):
@@ -276,8 +292,9 @@ def plotTimeAsFollower(df, ax, report=False):
     #
 #
 
-def plotVelocityVsGradient(df1, df2, axs, Nt=1):
+def plotAlignementCurvaturePhase(df1, df2, axs, Nt=1):
 
+    ## plot for non-followers
     sns.scatterplot(data=df1[df1["follower"]==False],
                   x="meanCurvature_hat",
                   y="v_dot_e1",
@@ -289,6 +306,7 @@ def plotVelocityVsGradient(df1, df2, axs, Nt=1):
                   zorder=1)
     #
 
+    ## plot for followers
     sns.scatterplot(data=df2,
               x="meanCurvature_hat",
               y="v_dot_e1",
@@ -300,11 +318,13 @@ def plotVelocityVsGradient(df1, df2, axs, Nt=1):
               zorder=1)
     #
 
+    ## plot for followers, when they begin to follow
     subdf=df2.groupby("cell").head(Nt)
     sns.scatterplot(data=subdf,
                     x="meanCurvature_hat",
                     y="v_dot_e1",
-                    color="blueviolet",
+                    color="gold",
+                    marker="s",
                     edgecolor="black",
                     alpha=.5,
                     ax=axs[1],
@@ -318,20 +338,6 @@ def plotVelocityVsGradient(df1, df2, axs, Nt=1):
 
         ax.set_xlabel(r"Normalized $H$", fontsize=20)
         ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
-#
-
-def plotBeginningOfFollowing(df, ax, Nt=1):
-    subdf=df.groupby("cell").head(Nt)
-    
-    sns.scatterplot(data=subdf,
-                    x="meanCurvature_hat",
-                    y="v_dot_e1",
-                    color="cyan",
-                    edgecolor="black",
-                    alpha=.5,
-                    ax=ax,
-                    legend=False,
-                    zorder=1)
 #
 
 def plotVelocityGradientPhase(df, ax, N=10):
@@ -388,6 +394,9 @@ def plotVelocityGradientPhase(df, ax, N=10):
     scatter = ax.scatter(subdf["meanCurvature_hat"], subdf["v_dot_e1"], c=subdf["frame"], 
                          cmap='viridis', s=64, zorder=2, edgecolors='white', linewidth=0.5)
     plt.colorbar(scatter, ax=ax, label="Time")
+
+
+    
     
 
 
@@ -440,56 +449,148 @@ def plotVelocityGradientPhase(df, ax, N=10):
 #    count+=1
 #    #
     
-def plotGradientAlignmentVsTime(df, ax, N=10):
-    # number of traj to plot
-    #N=min(N, len(df["cell"].unique()))
 
-    # traj to plot
-    #selected_id = random.sample(list(df["cell"].unique()), N)
-    selected_id=[275, 26, 18, 264]
-    subdf=df[df["cell"].isin(selected_id)]
+def plotCurvatureVsXaxis(metadata, ax):
+
+    # surface parameters
+    A=metadata["Amplitude"]
+    L=metadata["Wavelength"]
+
+    # X axis
+    x = np.linspace(0., .5*L, 200)
+    k=2.*np.pi/L
+
+    # functions definition
+    def h(x):
+        return A*np.cos(k*x)
+
+
+    # curvature definition
+    def H(x):
+        hx=-A*k*np.sin(k*x)
+        hxx=-A*k**2.*np.cos(k*x)
+        return hxx*(1.+hx**2.)**(-1.5)
     
-    palette=sns.color_palette("deep", len(selected_id))
+    def gH(x):
+        hx=-A*k*np.sin(k*x)
+        hxx=-A*k**2.*np.cos(k*x)
+        hxxx=A*k**3.*np.sin(k*x)
+        return .5*(hxxx*(1.+hx**2.)**(-1.5) - 3.*hx*hxx**2.*(1.+hx**2.)**(-2.5))
+    #norm_gradH=.5*(hxxx*(1.+hx**2.)**(-1.5) - 3.*hx*hxx**2.*(1.+hx**2.)**(-2.5))
+    #testgh= (2.*(1.+hx**2.)**1.5*hxxx - 6.*(1.+hx**2.)**.5*hx*hxx**2.) / (4.*(1.+hx**2.)**3.)
 
-    # convert seconds to minutes
-    pos0 = subdf.columns.get_loc("time")
-    subdf.insert(pos0+1, "time_min", subdf["time"] / 60.)
-
-    ## separation of sequences
-    subdf = subdf.sort_values(["cell", "frame"])
-    subdf["t_diff"] = subdf.groupby("cell")["frame"].diff()
-    subdf["is_gap"] = (subdf["t_diff"] != 1) | subdf["t_diff"].isna()
-    subdf["sequence_id"] = subdf.groupby("cell")["is_gap"].cumsum()
-
-    #print(subdf[subdf["cell"]==275][["cell", "frame", "t_diff", "is_gap", "sequence_id"]])
-
-    count=0
-    for cell in subdf["cell"].unique():
-        cell_i=subdf[subdf["cell"]==cell]
-        for seq in cell_i["sequence_id"].unique():
-            seq_i=cell_i[cell_i["sequence_id"]==seq]
-            sns.lineplot(data=seq_i,
-                         x="v_dot_e1",
-                         y="time_min",
-                         color=palette[count],
-                         linewidth=5,
-                         markers=True,
-                         marker="o",
-                         markersize=8,
-                         legend=False,
-                         orient="y",
-                         zorder=2,
-                         ax=ax
-                     )
-        count+=1
-        #
+    # Créer les segments de ligne
+    points = np.array([x/L, h(x)/A]).T.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
     
-    ax.set_yticks([0., 5., 10., 15., 20.])
-    ax.set_xlim(left=-1., right=1.)
-    ax.set_ylim(bottom=0., top=20.)
-    ax.set_xlabel(xlabel=r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
-    ax.set_ylabel(ylabel="Time (min)", fontsize=20)
+    # Créer la LineCollection avec la cmap
+    norm = plt.Normalize(-A*k**2., A*k**2.)
+    lc = LineCollection(segments, cmap='viridis', norm=norm)
+    lc.set_array(H(x))  # Assigner les valeurs de couleur
+    lc.set_linewidth(6)
+    
+    # Ajouter la collection
+    line = ax.add_collection(lc)
+    ax.autoscale()
+    
+    # Ajouter une colorbar
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    
+    cax = inset_axes(ax,
+                     width="45%",
+                     height="5%",
+                     loc='upper right',
+                     borderpad=1.)
+    
+    cbar = plt.colorbar(line, cax=cax, orientation='horizontal')
+    cbar.set_label(r'Normalized $H$', fontsize=15)
+    cbar.set_ticks([-1, -0.5, 0, 0.5, 1])
+    cax.tick_params(labelsize=10)
+    #plt.colorbar(line, ax=ax, label=r'Normalized $H$', location="top")
+    
+    ax.set_xlabel(r'$x/\lambda$', fontsize=20)
+    ax.set_ylabel(r'$h(x)/a$', fontsize=20)
 
+    alpha=.2
+    poss=[0.0, .05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .45, .5]
+    for pos in poss:
+        ax.arrow(x=pos,
+                 y=h(pos*L)/A,
+                 dx=alpha*gH(pos*L)/np.max(gH(x)),
+                 dy=0.,
+                 color="indianred",
+                 width=.007,
+                 zorder=2,
+                 length_includes_head=False,
+                 head_width=.02,
+                 head_length=.01)
+    
+    ax.set_xticks([0., 0.1, 0.2, 0.3, 0.4, 0.5])
+
+    import matplotlib.lines as mlines
+    arrow_patch = mlines.Line2D([], [], color='indianred', marker='>', markersize=10, linestyle='-', linewidth=2)
+    handles=[arrow_patch]
+    ax.legend(handles=handles, labels=[r'$\vec{\nabla}H\cdot \hat{k}$'], loc=7, fontsize=15)
+#
+
+def plotSpeedInPhase(metadata, df, axs, Nt=1):
+    spec={axs[0]:r"Normalized $H$", axs[1]:r"$\hat{v}\cdot \vec{e}_1$"}
+    
+    ## plot Speed Vs Curvature
+    sns.scatterplot(data=df,
+                x="meanCurvature_hat",
+                y="speed",
+                color="cyan",
+                edgecolor="black",
+                alpha=.5,
+                ax=axs[0],
+                legend=False,
+                zorder=1)
+    #
+    
+    ## plot Speed Vs Alignment 
+    sns.scatterplot(data=df,
+                    x="v_dot_e1",
+                    y="speed",
+                    color="cyan",
+                    edgecolor="black",
+                    alpha=.5,
+                    ax=axs[1],
+                    legend=False,
+                    zorder=1)
+    #
+
+    subdf=df.groupby("cell").head(Nt)
+    sns.scatterplot(data=subdf,
+                    x="meanCurvature_hat",
+                    y="speed",
+                    color="gold",
+                    marker="s",
+                    edgecolor="black",
+                    alpha=.5,
+                    ax=axs[0],
+                    legend=False,
+                    zorder=2)
+    
+    sns.scatterplot(data=subdf,
+                x="v_dot_e1",
+                y="speed",
+                color="gold",
+                marker="s",
+                edgecolor="black",
+                alpha=.5,
+                ax=axs[1],
+                legend=False,
+                zorder=2)
+
+    
+    for ax in axs:
+        ax.axhline(y=metadata["Wave Celerity"], color="black", linestyle="--")
+        ax.set_xlim(left=-1., right=1.)
+
+        ax.set_xlabel(spec[ax], fontsize=20)
+        ax.set_ylabel(r"Cell Speed (µm/s)", fontsize=20)
+    #
 #
 
 
@@ -533,19 +634,20 @@ celerities = [.7]
 #                                                    Open figure
 # ================================================================================================================
 # ================================================================================================================
-NbLignes, NbColonnes=2, 4
-Largeur, Hauteur = 10, 5#30, 15
+NbLignes, NbColonnes=2, 5
+Largeur, Hauteur = 20, 10
 Largeur_ins, Hauteur_ins = 2.5, 2.5
 fig1 = plt.figure(num='curvature_traj', figsize=(Largeur, Hauteur), constrained_layout=True)
 gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
 
 ax1 = fig1.add_subplot(gs1[:, 0])
-ax2 = fig1.add_subplot(gs1[0, 1])
+ax2 = fig1.add_subplot(gs1[:, 1])
 ax3 = fig1.add_subplot(gs1[0, 2])
-ax4 = fig1.add_subplot(gs1[:, 3])
-ax5 = fig1.add_subplot(gs1[1, 1])
-ax6 = fig1.add_subplot(gs1[1, 2])
-#ax7 = fig1.add_subplot(gs1[1, 3])
+ax4 = fig1.add_subplot(gs1[0, 3])
+ax5 = fig1.add_subplot(gs1[1, 2])
+ax6 = fig1.add_subplot(gs1[1, 3])
+ax7 = fig1.add_subplot(gs1[0, 4])
+ax8 = fig1.add_subplot(gs1[1, 4])
 
 ## add labels
 def add_label(ax, txt, x=-0.05, y=1.1):
@@ -556,15 +658,18 @@ add_label(ax1, 'A')
 add_label(ax2, 'B')
 add_label(ax3, 'C')
 add_label(ax4, 'D')
-add_label(ax5, 'E')
-add_label(ax6, 'F')
-#add_label(ax7, 'G')
+add_label(ax5, 'F')
+add_label(ax6, 'G')
+add_label(ax7, 'E')
+add_label(ax8, 'H')
 
 ## font size
-plt.rcParams.update({'font.size': 50})
+plt.rcParams.update({'font.size': 20})
 
 
 show=True
+save=False
+path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 
 # ================================================================================================================
 # ================================================================================================================
@@ -607,31 +712,39 @@ data=normalizeCurvature(data,
 #
 
 ## extraction des frame où la cellule suit la vague (selon le critère vu plus haut)
-data, data_followers=isolateFollowers(data, opening_angle=60., min_length=10, report=False)
-
-##
-plotTimeAsFollower(data, ax=ax2, report=False)
+data, data_followers=isolateFollowers(data,
+                                      opening_angle=60.,
+                                      min_length=10,
+                                      report=False)
 
 ## 
-plotCurvature(data_followers, ax=ax5)
+plotCurvatureVsXaxis(metadata, ax=ax3)
 
 ##
-plotCurvatureVsTime(data_followers, ax=ax1)
+plotTimeAsFollower(data, ax=ax5, report=False)
+
+## 
+#plotCurvature(data_followers, ax=ax5)
 
 ##
-plotVelocityVsGradient(data, data_followers, Nt=1, axs=[ax3, ax6])
+plotVsTime(metadata, data_followers, axs=[ax1, ax2], rand=False, N=1)
+
+##
+plotAlignementCurvaturePhase(data, data_followers, Nt=1, axs=[ax4, ax7])
 
 ##
 #plotVelocityGradientPhase(data_followers, ax=ax4, N=1)
 
-##
-plotGradientAlignmentVsTime(data_followers, ax=ax4)
 
-# ##
-# #plotBeginningOfFollowing(data_followers, Nt=1, ax=ax4)
+##
+plotSpeedInPhase(metadata, data_followers, axs=[ax6, ax8])
 
 if show:
     plt.show()
+
+if save:
+    plt.savefig(path_to_save)
+
 
 
 

@@ -96,7 +96,7 @@ class Cell {
     this.f_ext = createVector(0.0, 0.0);
     if (curv_assumption) this.f_ext.add(this.getPsiCurv(this.position, this.velocity.copy(), t));
     if (surf_assumption) this.f_ext.add(this.getPsiWave(this.position, t));
-    this.f_ext=this.From_local_to_global(this.f_ext, t);                
+    this.f_ext=this.From_local_to_global(this.f_ext, t);
 
     //-------------------------------------------- velocity computation
 
@@ -319,14 +319,11 @@ class Cell {
     // is the cell in front or behind the wave ? (cf. post)
     let [e1, e2]=NormalizeVector(gradCurvature(this.position.copy(), t, angleParams));
     let prod=NormalizeVector(this.velocity.copy()).dot(e1);
+    //console.log(Math.sign(prod));
+    //drawVector(this.position.x, this.position.y, e1.copy().mult(1000));
 
-    // let 
+    //  
     let H=meanCurvature(this.position.copy(), t, angleParams);
-
-    // 
-    console.log("-- print --");
-    console.log(" produit scalaire:", prod);
-    console.log(" mean curv:", H);
 
     table_data.push(`${it_sauv}, ${t}, ${this.cellID}, ${this.position.x}, ${this.position.y}, ${wave_orientation}, ${prod}, ${H}`);
   }

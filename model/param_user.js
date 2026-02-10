@@ -49,7 +49,7 @@
 let surface_title='right_sinus';
 
 let a=10.0;
-let lambda=80.0;
+let lambda=20.0;
 let c=0.7;
 let phi0=0.0;
 
@@ -66,7 +66,7 @@ let lambdas=40.0;
 //-------------------------------------------------------------------------------------------------------
 
 // number of cells
-let nbCell=0;
+let nbCell=300;
 
 // central metric     median  /  mean
 let central_metric = 'mean';
@@ -79,10 +79,10 @@ let curv_assumption = true;
 //-------------------------------------------------------------------------------------------------------
 
 // trajectory sample (seconds)
-let dt_mesure = 15.0;
+let dt_mesure = 1.0;
 
 // simulation is stopped when the window is closed. Tmax is the duration in seconds of the trajectories recording. 1200s=20min
-let Tmax=1200.0;
+let Tmax=600.0;
 
 
 // IV. Others
