@@ -12,14 +12,14 @@ import pandas as pd
 
 from scipy import stats
 from scipy.stats import norm
-import pingouin as pg
-import scikit_posthocs as sp
-import openturns as ot
+#import pingouin as pg
+#import scikit_posthocs as sp
+#import openturns as ot
 import random
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from openturns.viewer import View
+#from openturns.viewer import View
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
 from matplotlib.collections import LineCollection
@@ -160,6 +160,27 @@ def normalizeCurvature(df, surface="right_sinus", a=10., L=20., report=False):
     return df
 #
 
+def normalizeHeight(metadata, df, report=False):
+    A=metadata["Amplitude"]
+    L=metadata["Wavelength"]
+    k=2.*np.pi / L
+
+    pos0 = df.columns.get_loc("z")
+    # normalize height
+    df.insert(pos0+1, "z_hat", df["z"] / A)
+
+    # get coresponding x
+    df.insert(pos0+2, "xbis", np.arccos(df["z_hat"]) / (k*L))
+
+    if report:
+        print("\n-- report on height")
+        print("Amplitude (µm):", round(A, 3))
+        print(df[["z", "z_hat", "xbis"]].describe().T, "\n")
+    #
+
+    return df
+#
+
 def plotCurvature(df, ax):
 
     # plot histogram of curvature
@@ -200,7 +221,7 @@ def plotCurvature(df, ax):
 
 def plotVsTime(metadata, df, axs, N=10, rand=False):
 
-    spec={ax1:r"Normalized $H$", ax2:r"$\hat{v}\cdot \vec{e}_1$"}
+    spec={ax1:(r"$x/\lambda$", (0., .5)), ax2:(r"$\hat{v}\cdot \vec{e}_1$", (-1., 1.))}
     # traj to plot
     selected_id=[275, 26, 18, 264]
     if rand:
@@ -228,10 +249,10 @@ def plotVsTime(metadata, df, axs, N=10, rand=False):
         for seq in cell_i["sequence_id"].unique():
             seq_i=cell_i[cell_i["sequence_id"]==seq]
             sns.lineplot(data=seq_i,
-                         x="meanCurvature_hat",
+                         x="xbis",
                          y="time_min",
                          color=palette[count],
-                         linewidth=5,
+                         linewidth=1,
                          markers=True,
                          marker="o",
                          markersize=8,
@@ -245,7 +266,7 @@ def plotVsTime(metadata, df, axs, N=10, rand=False):
                          x="v_dot_e1",
                          y="time_min",
                          color=palette[count],
-                         linewidth=5,
+                         linewidth=1,
                          markers=True,
                          marker="o",
                          markersize=8,
@@ -254,15 +275,41 @@ def plotVsTime(metadata, df, axs, N=10, rand=False):
                          zorder=2,
                          ax=axs[1]
                      )
+            
+            subdf1=seq_i.head(1)
+
+            sns.scatterplot(data=subdf1,
+                            x="xbis",
+                            y="time_min",
+                            color="black",
+                            marker="d",
+                            edgecolor=None,
+                            s=150,
+                            legend=False,
+                            zorder=3,
+                            ax=axs[0]
+                            )
+            
+            sns.scatterplot(data=subdf1,
+                            x="v_dot_e1",
+                            y="time_min",
+                            color="black",
+                            marker="d",
+                            edgecolor=None,
+                            s=150,
+                            legend=False,
+                            zorder=3,
+                            ax=axs[1]
+                            )
         count+=1
         #
     
     
     for ax in axs:
         ax.set_yticks([0., .25*T, .5*T, .75*T, T])
-        ax.set_xlim(left=-1., right=1.)
+        ax.set_xlim(spec[ax][1])
         ax.set_ylim(bottom=0., top=T)
-        ax.set_xlabel(xlabel=spec[ax], fontsize=20)
+        ax.set_xlabel(xlabel=spec[ax][0], fontsize=20)
         ax.set_ylabel(ylabel="Time (min)", fontsize=20)
     #
 #
@@ -296,7 +343,7 @@ def plotAlignementCurvaturePhase(df1, df2, axs, Nt=1):
 
     ## plot for non-followers
     sns.scatterplot(data=df1[df1["follower"]==False],
-                  x="meanCurvature_hat",
+                  x="xbis",
                   y="v_dot_e1",
                   color="lightcoral",
                   edgecolor="black",
@@ -308,7 +355,7 @@ def plotAlignementCurvaturePhase(df1, df2, axs, Nt=1):
 
     ## plot for followers
     sns.scatterplot(data=df2,
-              x="meanCurvature_hat",
+              x="xbis",
               y="v_dot_e1",
               color="cyan",
               edgecolor="black",
@@ -321,7 +368,7 @@ def plotAlignementCurvaturePhase(df1, df2, axs, Nt=1):
     ## plot for followers, when they begin to follow
     subdf=df2.groupby("cell").head(Nt)
     sns.scatterplot(data=subdf,
-                    x="meanCurvature_hat",
+                    x="xbis",
                     y="v_dot_e1",
                     color="gold",
                     marker="s",
@@ -333,10 +380,11 @@ def plotAlignementCurvaturePhase(df1, df2, axs, Nt=1):
 
 
     for ax in axs:
-        ax.set_xlim(left=-1., right=1.)
+        ax.set_xlim(left=0., right=.5)
         ax.set_ylim(bottom=-1., top=1.)
+        ax.set_xticks([0., 0.25, 0.5])
 
-        ax.set_xlabel(r"Normalized $H$", fontsize=20)
+        ax.set_xlabel(r"$x/\lambda$", fontsize=20)
         ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
 #
 
@@ -534,11 +582,11 @@ def plotCurvatureVsXaxis(metadata, ax):
 #
 
 def plotSpeedInPhase(metadata, df, axs, Nt=1):
-    spec={axs[0]:r"Normalized $H$", axs[1]:r"$\hat{v}\cdot \vec{e}_1$"}
+    spec={axs[0]:(r"$x/\lambda$", (0., .5)), axs[1]:(r"$\hat{v}\cdot \vec{e}_1$", (-1., 1.))}
     
     ## plot Speed Vs Curvature
     sns.scatterplot(data=df,
-                x="meanCurvature_hat",
+                x="xbis",
                 y="speed",
                 color="cyan",
                 edgecolor="black",
@@ -562,7 +610,7 @@ def plotSpeedInPhase(metadata, df, axs, Nt=1):
 
     subdf=df.groupby("cell").head(Nt)
     sns.scatterplot(data=subdf,
-                    x="meanCurvature_hat",
+                    x="xbis",
                     y="speed",
                     color="gold",
                     marker="s",
@@ -586,9 +634,9 @@ def plotSpeedInPhase(metadata, df, axs, Nt=1):
     
     for ax in axs:
         ax.axhline(y=metadata["Wave Celerity"], color="black", linestyle="--")
-        ax.set_xlim(left=-1., right=1.)
+        ax.set_xlim(spec[ax][1])
 
-        ax.set_xlabel(spec[ax], fontsize=20)
+        ax.set_xlabel(spec[ax][0], fontsize=20)
         ax.set_ylabel(r"Cell Speed (µm/s)", fontsize=20)
     #
 #
@@ -607,12 +655,13 @@ def plotSpeedInPhase(metadata, df, axs, Nt=1):
 
 # study
 substrate_regime="dyna"  # dyna or static
-NDSC_study="test"
-DSC_study="test"
+study="test"
+file="reducing_dt"
+
 # assets
 root=os.getcwd()
-NDSC_assets=os.path.join(root, substrate_regime, "assets", NDSC_study)
-DSC_assets=os.path.join(root, substrate_regime, "assets", DSC_study)
+NDSC_assets=os.path.join(root, substrate_regime, "assets", study)
+DSC_assets=os.path.join(root, substrate_regime, "assets", study)
 
 # list of metadata which must be integers
 must_be_int = ['Surface Index', 'Number of Cells']
@@ -679,7 +728,7 @@ path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 
 print('---------------------- open numerical data')
 
-path=NDSC_assets + "\\" + "c=0.7" + "\\" + "data.txt"
+path=NDSC_assets + "\\" + file + "\\" + "data.txt"
 metadata, data = load_trajectory_data(path, must_be_int)
 
 
@@ -710,6 +759,9 @@ data=normalizeCurvature(data,
                         report=False
                         )
 #
+
+##
+data=normalizeHeight(metadata, data, report=False)
 
 ## extraction des frame où la cellule suit la vague (selon le critère vu plus haut)
 data, data_followers=isolateFollowers(data,

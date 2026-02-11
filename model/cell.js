@@ -319,13 +319,15 @@ class Cell {
     // is the cell in front or behind the wave ? (cf. post)
     let [e1, e2]=NormalizeVector(gradCurvature(this.position.copy(), t, angleParams));
     let prod=NormalizeVector(this.velocity.copy()).dot(e1);
-    //console.log(Math.sign(prod));
-    //drawVector(this.position.x, this.position.y, e1.copy().mult(1000));
 
     //  
     let H=meanCurvature(this.position.copy(), t, angleParams);
 
-    table_data.push(`${it_sauv}, ${t}, ${this.cellID}, ${this.position.x}, ${this.position.y}, ${wave_orientation}, ${prod}, ${H}`);
+    //
+    let z=substrate(this.position.copy(), t, angleParams);
+    console.log(z)
+
+    table_data.push(`${it_sauv}, ${t}, ${this.cellID}, ${this.position.x}, ${this.position.y}, ${z}, ${wave_orientation}, ${prod}, ${H}`);
   }
   
 }

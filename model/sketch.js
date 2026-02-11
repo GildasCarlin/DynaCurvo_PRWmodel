@@ -219,7 +219,7 @@ function initTable(){
   table_data.push(`# Vmax=${parameters[9]}`);
   table_data.push(`# surf_assumption=${surf_assumption}`);
   table_data.push(`# curvature_assumption=${curv_assumption}`);
-  table_data.push('frame,time,cell,x,y,theta,v_dot_e1,meanCurvature');
+  table_data.push('frame,time,cell,x,y,z,theta,v_dot_e1,meanCurvature');
   
   return table_data;
 }
