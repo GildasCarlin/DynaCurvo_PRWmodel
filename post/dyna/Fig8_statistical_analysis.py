@@ -7,22 +7,23 @@ import json
 import numpy as np
 
 import os
-import regex as re
+#import regex as re
 import pandas as pd
 
-from scipy import stats
-from scipy.stats import norm
+#from scipy import stats
+#from scipy.stats import norm
 #import pingouin as pg
 #import scikit_posthocs as sp
 #import openturns as ot
 import random
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+#import matplotlib.patches as mpatches
 #from openturns.viewer import View
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
 from matplotlib.collections import LineCollection
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 # ================================================================================================================
 # ================================================================================================================
@@ -30,7 +31,7 @@ from matplotlib.collections import LineCollection
 # ================================================================================================================
 # ================================================================================================================
 
-def load_trajectory_data(filename, list, comment="#", sep=",", eg="="):
+def loadTrajectoryData(filename, list, comment="#", sep=",", eg="="):
     # Read metadata
 
     metadata = {}
@@ -117,7 +118,6 @@ def filterConsecutiveSequences(group, min_length=5):
     
     return group[group["new_sequence"].isin(valid_sequences)].drop(["frame_diff", "new_sequence"], axis=1)
 #
-
 
 def isolateFollowers(df, opening_angle=30., min_length=10, report=False):
     # the opening angle is expected in degrees
@@ -223,10 +223,11 @@ def plotVsTime(metadata, df, axs, N=10, rand=False):
 
     spec={ax1:(r"$x/\lambda$", (0., .5)), ax2:(r"$\hat{v}\cdot \vec{e}_1$", (-1., 1.))}
     # traj to plot
-    selected_id=[275, 26, 18, 264]
+    selected_id=[266, 209]
     if rand:
         N=min(N, len(df["cell"].unique()))
         selected_id = random.sample(list(df["cell"].unique()), N)
+        print("plotted cells:", selected_id)
     subdf=df[df["cell"].isin(selected_id)]
     
 
@@ -277,14 +278,13 @@ def plotVsTime(metadata, df, axs, N=10, rand=False):
                      )
             
             subdf1=seq_i.head(1)
-
             sns.scatterplot(data=subdf1,
                             x="xbis",
                             y="time_min",
                             color="black",
                             marker="d",
                             edgecolor=None,
-                            s=150,
+                            s=100,
                             legend=False,
                             zorder=3,
                             ax=axs[0]
@@ -296,15 +296,14 @@ def plotVsTime(metadata, df, axs, N=10, rand=False):
                             color="black",
                             marker="d",
                             edgecolor=None,
-                            s=150,
+                            s=100,
                             legend=False,
                             zorder=3,
                             ax=axs[1]
                             )
         count+=1
-        #
-    
-    
+    #
+      
     for ax in axs:
         ax.set_yticks([0., .25*T, .5*T, .75*T, T])
         ax.set_xlim(spec[ax][1])
@@ -329,63 +328,61 @@ def plotTimeAsFollower(df, ax, report=False):
     ax.axvline(x=stats["50%"], linewidth=4, color="indianred", zorder=2)
 
     ax.set_xlim(left=0., right=100.)
-    ax.set_xticks([0., 25., stats["50%"], 50., 75., 100.])
+    ax.set_xticks([0., 25., 50., 75., 100.])
     ax.set_xlabel("% of time spent following the wave", fontsize=15)
-    ax.set_ylabel("Cell density", fontsize=20)
-    
+    ax.set_ylabel("Cell count (Density)", fontsize=20)
+
     if report:
         print("\n-- report on followers")
         print(stats.T, "\n")
     #
 #
 
-def plotAlignementCurvaturePhase(df1, df2, axs, Nt=1):
+def plotAlignementCurvaturePhase(df, ax, Nt=1):
 
-    ## plot for non-followers
-    sns.scatterplot(data=df1[df1["follower"]==False],
-                  x="xbis",
-                  y="v_dot_e1",
-                  color="lightcoral",
-                  edgecolor="black",
-                  alpha=.5,
-                  ax=axs[0],
-                  legend=False,
-                  zorder=1)
-    #
+    ###### plot for non-followers
+    ####sns.scatterplot(data=df1[df1["follower"]==False],
+    ####              x="xbis",
+    ####              y="v_dot_e1",
+    ####              color="lightcoral",
+    ####              edgecolor="black",
+    ####              alpha=.5,
+    ####              ax=axs[0],
+    ####              legend=False,
+    ####              zorder=1)
+    #####
 
     ## plot for followers
-    sns.scatterplot(data=df2,
+    sns.scatterplot(data=df,
               x="xbis",
               y="v_dot_e1",
               color="cyan",
               edgecolor="black",
               alpha=.5,
-              ax=axs[1],
+              ax=ax,
               legend=False,
               zorder=1)
     #
 
     ## plot for followers, when they begin to follow
-    subdf=df2.groupby("cell").head(Nt)
+    subdf=df.groupby("cell").head(Nt)
     sns.scatterplot(data=subdf,
                     x="xbis",
                     y="v_dot_e1",
-                    color="gold",
-                    marker="s",
-                    edgecolor="black",
+                    color="black",
+                    marker="d",
                     alpha=.5,
-                    ax=axs[1],
+                    ax=ax,
                     legend=False,
                     zorder=2)
 
+    ax.set_xlim(left=0., right=.5)
+    ax.set_ylim(bottom=-1., top=1.)
+    ax.set_xticks([0., 0.25, 0.5])
+    ax.set_yticks([-1., -.5, 0., .5, 1.])
 
-    for ax in axs:
-        ax.set_xlim(left=0., right=.5)
-        ax.set_ylim(bottom=-1., top=1.)
-        ax.set_xticks([0., 0.25, 0.5])
-
-        ax.set_xlabel(r"$x/\lambda$", fontsize=20)
-        ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
+    ax.set_xlabel(r"$x/\lambda$", fontsize=20)
+    ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
 #
 
 def plotVelocityGradientPhase(df, ax, N=10):
@@ -472,31 +469,8 @@ def plotVelocityGradientPhase(df, ax, N=10):
     ax.set_ylim(bottom=-1.1, top=1.1)
 
     ax.set_xlabel(r"Normalized $H$", fontsize=20)
-    ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
-#  
-    
-    
-#count=0
-#for cell in subdf["cell"].unique():
-#    cell_i=subdf[subdf["cell"]==cell]
-#    for seq in cell_i["sequence_id"].unique():
-#        seq_i=cell_i[cell_i["sequence_id"]==seq]
-#        sns.lineplot(data=seq_i,
-#                     x="meanCurvature_hat",
-#                     y="time_min",
-#                     color=palette[count],
-#                     linewidth=5,
-#                     markers=True,
-#                     marker="o",
-#                     markersize=8,
-#                     legend=False,
-#                     orient="y",
-#                     zorder=2,
-#                     ax=ax
-#                 )
-#    count+=1
-#    #
-    
+    #ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
+#
 
 def plotCurvatureVsXaxis(metadata, ax):
 
@@ -542,8 +516,6 @@ def plotCurvatureVsXaxis(metadata, ax):
     ax.autoscale()
     
     # Ajouter une colorbar
-    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-    
     cax = inset_axes(ax,
                      width="45%",
                      height="5%",
@@ -554,7 +526,6 @@ def plotCurvatureVsXaxis(metadata, ax):
     cbar.set_label(r'Normalized $H$', fontsize=15)
     cbar.set_ticks([-1, -0.5, 0, 0.5, 1])
     cax.tick_params(labelsize=10)
-    #plt.colorbar(line, ax=ax, label=r'Normalized $H$', location="top")
     
     ax.set_xlabel(r'$x/\lambda$', fontsize=20)
     ax.set_ylabel(r'$h(x)/a$', fontsize=20)
@@ -574,6 +545,7 @@ def plotCurvatureVsXaxis(metadata, ax):
                  head_length=.01)
     
     ax.set_xticks([0., 0.1, 0.2, 0.3, 0.4, 0.5])
+    ax.set_yticks([-1., -.5, 0., .5, 1.])
 
     import matplotlib.lines as mlines
     arrow_patch = mlines.Line2D([], [], color='indianred', marker='>', markersize=10, linestyle='-', linewidth=2)
@@ -612,9 +584,8 @@ def plotSpeedInPhase(metadata, df, axs, Nt=1):
     sns.scatterplot(data=subdf,
                     x="xbis",
                     y="speed",
-                    color="gold",
-                    marker="s",
-                    edgecolor="black",
+                    color="black",
+                    marker="d",
                     alpha=.5,
                     ax=axs[0],
                     legend=False,
@@ -623,9 +594,8 @@ def plotSpeedInPhase(metadata, df, axs, Nt=1):
     sns.scatterplot(data=subdf,
                 x="v_dot_e1",
                 y="speed",
-                color="gold",
-                marker="s",
-                edgecolor="black",
+                color="black",
+                marker="d",
                 alpha=.5,
                 ax=axs[1],
                 legend=False,
@@ -641,9 +611,98 @@ def plotSpeedInPhase(metadata, df, axs, Nt=1):
     #
 #
 
+def prepareData(metadf, df):
 
+    ## passage du repère js au repère python
+    df[["y", "theta"]] *= -1.
 
+    ## compute vx, vy and speed
+    df=computeCellVelocity(df, dt=metadf["Time Interval"])
 
+    ## compute wave vector
+    df=computeWaveVector(df)
+
+    ## normalize mean curvature
+    df=normalizeCurvature(df,
+                        surface=metadf["Surface"],
+                        a=metadf["Amplitude"],
+                        L=metadf["Wavelength"],
+                        report=False
+                        )
+    
+    ## height
+    df=normalizeHeight(metadf, df, report=False)
+
+    # sequences of followers
+    df, df_followers=isolateFollowers(df,
+                                      opening_angle=60.,
+                                      min_length=10,
+                                      report=False)
+    
+    return df, df_followers
+#
+
+def plotTrajectoryInPhase(ax, file="reducing_dt", threshold=50, central_metric="median"):
+    
+    path=NDSC_assets + "\\" + file + "\\" + "data.txt"
+    metadf, df = loadTrajectoryData(path, must_be_int)
+    metadf, df = prepareData(metadf, df)
+    
+    subdf=df[["frame", "time", "cell", "xbis", "v_dot_e1"]].copy()
+    ## separation of sequences
+    subdf = subdf.sort_values(["cell", "frame"])
+    subdf["t_diff"] = subdf.groupby("cell")["frame"].diff()
+    subdf["is_gap"] = (subdf["t_diff"] != 1) | subdf["t_diff"].isna()
+    subdf["sequence_id"] = subdf.groupby("cell")["is_gap"].cumsum()
+    subdf=subdf.drop(["t_diff", "is_gap"], axis=1)
+
+    ## normalize time
+    pos0=subdf.columns.get_loc("time")
+    subdf.insert(pos0+1, "time_norm", subdf.groupby(["cell", "sequence_id"])["time"].transform(lambda x: x - x.min()))
+    pos0=subdf.columns.get_loc("frame")
+    subdf.insert(pos0+1, "frame_norm", subdf.groupby(["cell", "sequence_id"])["frame"].transform(lambda x: x - x.min()))
+
+    # isolate frames with enougn data
+    frame_to_keep=subdf.groupby("time_norm")[["xbis", "v_dot_e1"]].count()
+    frame_to_keep=frame_to_keep.index[frame_to_keep["xbis"] >= threshold].tolist()
+    subdf=subdf[subdf["time_norm"].isin(frame_to_keep)]
+    to_plot=subdf.groupby("time_norm")[["xbis", "v_dot_e1"]].agg(["mean", "median", "std"])
+    to_plot = to_plot.reset_index()
+
+    # preparation color line
+    x = to_plot[("xbis", central_metric)].values
+    y = to_plot[("v_dot_e1", central_metric)].values
+    time = to_plot["time_norm"].values / 60.
+
+    points = np.array([x, y]).T.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+    norm = plt.Normalize(time.min(), time.max())
+    lc = LineCollection(segments, cmap='magma', norm=norm)
+    lc.set_array(time)
+    lc.set_linewidth(2)
+
+    line=ax.add_collection(lc)
+    ax.autoscale()   
+
+    cax = inset_axes(ax,
+                     width="5%",
+                     height="45%",
+                     loc='upper left',
+                     borderpad=0.5)
+    
+    cbar = plt.colorbar(line, cax=cax, orientation='vertical')
+    cbar.set_label(r'Time (min)', fontsize=15)
+    cax.tick_params(labelsize=10)
+
+    ax.scatter(x, y, c=time, cmap='magma', s=20, zorder=3, edgecolors='black', linewidth=0.5)
+    ax.scatter(x[0], y[0], color="black", marker="d", s=100, zorder=3)
+    ax.set_xlim(left=0., right=0.5)
+    ax.set_ylim(bottom=-1., top=1.)
+    ax.set_yticks([-1., -.5, 0., .5, 1.])
+    ax.set_xlabel(r"$x/\lambda$", fontsize=20)
+    ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
+#
 
 
 
@@ -656,7 +715,7 @@ def plotSpeedInPhase(metadata, df, axs, Nt=1):
 # study
 substrate_regime="dyna"  # dyna or static
 study="test"
-file="reducing_dt"
+file="where_curvature"
 
 # assets
 root=os.getcwd()
@@ -684,10 +743,13 @@ celerities = [.7]
 # ================================================================================================================
 # ================================================================================================================
 NbLignes, NbColonnes=2, 5
-Largeur, Hauteur = 20, 10
+Largeur, Hauteur = 23, 10
 Largeur_ins, Hauteur_ins = 2.5, 2.5
 fig1 = plt.figure(num='curvature_traj', figsize=(Largeur, Hauteur), constrained_layout=True)
 gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
+
+## font size
+plt.rcParams.update({'font.size': 15})
 
 ax1 = fig1.add_subplot(gs1[:, 0])
 ax2 = fig1.add_subplot(gs1[:, 1])
@@ -703,8 +765,8 @@ def add_label(ax, txt, x=-0.05, y=1.1):
     ax.text(x, y, txt, transform=ax.transAxes, fontsize=20, fontweight='bold', va='top', ha='right')
 #
 
-add_label(ax1, 'A')
-add_label(ax2, 'B')
+add_label(ax1, 'A', y=1.04)
+add_label(ax2, 'B', y=1.04)
 add_label(ax3, 'C')
 add_label(ax4, 'D')
 add_label(ax5, 'F')
@@ -712,12 +774,11 @@ add_label(ax6, 'G')
 add_label(ax7, 'E')
 add_label(ax8, 'H')
 
-## font size
-plt.rcParams.update({'font.size': 20})
 
 
-show=True
-save=False
+
+show=False
+save=True
 path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 
 # ================================================================================================================
@@ -725,12 +786,6 @@ path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 #                                                    MAIN function
 # ================================================================================================================
 # ================================================================================================================
-
-print('---------------------- open numerical data')
-
-path=NDSC_assets + "\\" + file + "\\" + "data.txt"
-metadata, data = load_trajectory_data(path, must_be_int)
-
 
 ## objectif : isoler les moments où la cellule suit la vague
 ##
@@ -742,54 +797,27 @@ metadata, data = load_trajectory_data(path, must_be_int)
 ##    -- sur quel pan de vague est-elle ? suit-elle la vague (a) ou alors est-elle portée par la vague (b) ?
 ##       (a) e1.v<0   (b) e1.v>0
 
-## passage du repère js au repère python
-data[["y", "theta"]] *= -1.
 
-## calcul des vitesses
-data=computeCellVelocity(data, dt=metadata["Time Interval"])
+print('--------- open data')
+path=NDSC_assets + "\\" + file + "\\" + "data.txt"
 
-## calcul du vecteur d'onde
-data=computeWaveVector(data)
+# open file
+metadata, data=loadTrajectoryData(path, must_be_int)
 
-## normalize mean curvature
-data=normalizeCurvature(data,
-                        surface=metadata["Surface"],
-                        a=metadata["Amplitude"],
-                        L=metadata["Wavelength"],
-                        report=False
-                        )
-#
+# format_data
+data, data_followers=prepareData(metadata, data)
 
-##
-data=normalizeHeight(metadata, data, report=False)
 
-## extraction des frame où la cellule suit la vague (selon le critère vu plus haut)
-data, data_followers=isolateFollowers(data,
-                                      opening_angle=60.,
-                                      min_length=10,
-                                      report=False)
 
-## 
+print('--------- plot')
+
 plotCurvatureVsXaxis(metadata, ax=ax3)
-
-##
 plotTimeAsFollower(data, ax=ax5, report=False)
-
-## 
-#plotCurvature(data_followers, ax=ax5)
-
-##
 plotVsTime(metadata, data_followers, axs=[ax1, ax2], rand=False, N=1)
-
-##
-plotAlignementCurvaturePhase(data, data_followers, Nt=1, axs=[ax4, ax7])
-
-##
-#plotVelocityGradientPhase(data_followers, ax=ax4, N=1)
-
-
-##
+plotAlignementCurvaturePhase(data_followers, Nt=1, ax=ax7)
 plotSpeedInPhase(metadata, data_followers, axs=[ax6, ax8])
+plotTrajectoryInPhase(ax=ax4, threshold=110, central_metric="median")
+
 
 if show:
     plt.show()

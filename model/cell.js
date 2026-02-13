@@ -325,7 +325,6 @@ class Cell {
 
     //
     let z=substrate(this.position.copy(), t, angleParams);
-    console.log(z)
 
     table_data.push(`${it_sauv}, ${t}, ${this.cellID}, ${this.position.x}, ${this.position.y}, ${z}, ${wave_orientation}, ${prod}, ${H}`);
   }
