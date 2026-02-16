@@ -79,7 +79,7 @@ let curv_assumption = true;
 //-------------------------------------------------------------------------------------------------------
 
 // trajectory sample (seconds)
-let dt_mesure = 1.0;
+let dt_mesure = 0.5;
 
 // simulation is stopped when the window is closed. Tmax is the duration in seconds of the trajectories recording. 1200s=20min
 let Tmax=600.0;
@@ -93,7 +93,7 @@ let data=true;
 let file_name_data = 'data';
 
 // draw 
-let draw_cells=true;
+let draw_cells=false;
 let draw_traj = false;   // deprecated if nbCell>5
 
 // record screenshot video

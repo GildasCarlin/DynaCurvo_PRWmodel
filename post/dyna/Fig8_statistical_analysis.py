@@ -35,7 +35,7 @@ def loadTrajectoryData(filename, list, comment="#", sep=",", eg="="):
     # Read metadata
 
     metadata = {}
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         for line in f:
             if line.startswith(comment):
                 if eg in line:
@@ -138,7 +138,7 @@ def isolateFollowers(df, opening_angle=30., min_length=10, report=False):
         print(df.head(), "\n")
         print(subdf.head(), "\n")
 
-        sns.scatterplot(data=subdf, x="x", y="y", hue="cell", palette='deep', edgecolor="black", legend=False)
+        sns.scatterplot(data=subdf, x="x", y="y", hue="cell", palette="deep", edgecolor="black", legend=False)
         plt.show()
     #
 
@@ -201,15 +201,15 @@ def plotCurvature(df, ax):
             )
     #
 
-    ax.arrow(.45, 0.9, -0.15, 0., width=.02, head_length=.04, color='dodgerblue', length_includes_head=True, transform=ax.transAxes)
-    ax.arrow(.55, 0.9, 0.15, 0., width=.02, head_length=.04, color='dodgerblue', length_includes_head=True, transform=ax.transAxes)
+    ax.arrow(.45, 0.9, -0.15, 0., width=.02, head_length=.04, color="dodgerblue", length_includes_head=True, transform=ax.transAxes)
+    ax.arrow(.55, 0.9, 0.15, 0., width=.02, head_length=.04, color="dodgerblue", length_includes_head=True, transform=ax.transAxes)
     ax.text(0.37, 0.8,
             r"Convex",
-            color='dodgerblue', rotation='horizontal', fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
+            color="dodgerblue", rotation="horizontal", fontsize=20, fontweight="bold", va="center", ha="center", transform=ax.transAxes
             )
     ax.text(0.65, 0.8,
             r"Concave",
-            color='dodgerblue', rotation='horizontal', fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
+            color="dodgerblue", rotation="horizontal", fontsize=20, fontweight="bold", va="center", ha="center", transform=ax.transAxes
             )
     
     ax.set_xlim(left=-1., right=1.)
@@ -433,11 +433,11 @@ def plotVelocityGradientPhase(df, ax, N=10):
     # Tracer les lignes en gris pour chaque trajectoire
     for idx_val in subdf["cell"].unique():
         subset = subdf[subdf["cell"] == idx_val].sort_values("frame")
-        ax.plot(subset["meanCurvature_hat"], subset["v_dot_e1"], color='lightgray', linewidth=1, zorder=1)
+        ax.plot(subset["meanCurvature_hat"], subset["v_dot_e1"], color="lightgray", linewidth=1, zorder=1)
 
 # Superposer les points colorés selon le temps
     scatter = ax.scatter(subdf["meanCurvature_hat"], subdf["v_dot_e1"], c=subdf["frame"], 
-                         cmap='viridis', s=64, zorder=2, edgecolors='white', linewidth=0.5)
+                         cmap="viridis", s=64, zorder=2, edgecolors="white", linewidth=0.5)
     plt.colorbar(scatter, ax=ax, label="Time")
 
 
@@ -507,7 +507,7 @@ def plotCurvatureVsXaxis(metadata, ax):
     
     # Créer la LineCollection avec la cmap
     norm = plt.Normalize(-A*k**2., A*k**2.)
-    lc = LineCollection(segments, cmap='viridis', norm=norm)
+    lc = LineCollection(segments, cmap="viridis", norm=norm)
     lc.set_array(H(x))  # Assigner les valeurs de couleur
     lc.set_linewidth(6)
     
@@ -519,16 +519,16 @@ def plotCurvatureVsXaxis(metadata, ax):
     cax = inset_axes(ax,
                      width="45%",
                      height="5%",
-                     loc='upper right',
+                     loc="upper right",
                      borderpad=1.)
     
-    cbar = plt.colorbar(line, cax=cax, orientation='horizontal')
-    cbar.set_label(r'Normalized $H$', fontsize=15)
+    cbar = plt.colorbar(line, cax=cax, orientation="horizontal")
+    cbar.set_label(r"Normalized $H$", fontsize=15)
     cbar.set_ticks([-1, -0.5, 0, 0.5, 1])
     cax.tick_params(labelsize=10)
     
-    ax.set_xlabel(r'$x/\lambda$', fontsize=20)
-    ax.set_ylabel(r'$h(x)/a$', fontsize=20)
+    ax.set_xlabel(r"$x/\lambda$", fontsize=20)
+    ax.set_ylabel(r"$h(x)/a$", fontsize=20)
 
     alpha=.2
     poss=[0.0, .05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .45, .5]
@@ -548,9 +548,9 @@ def plotCurvatureVsXaxis(metadata, ax):
     ax.set_yticks([-1., -.5, 0., .5, 1.])
 
     import matplotlib.lines as mlines
-    arrow_patch = mlines.Line2D([], [], color='indianred', marker='>', markersize=10, linestyle='-', linewidth=2)
+    arrow_patch = mlines.Line2D([], [], color="indianred", marker=">", markersize=10, linestyle="-", linewidth=2)
     handles=[arrow_patch]
-    ax.legend(handles=handles, labels=[r'$\vec{\nabla}H\cdot \hat{k}$'], loc=7, fontsize=15)
+    ax.legend(handles=handles, labels=[r"$\vec{\nabla}H\cdot \hat{k}$"], loc=7, fontsize=15)
 #
 
 def plotSpeedInPhase(metadata, df, axs, Nt=1):
@@ -642,7 +642,7 @@ def prepareData(metadf, df):
     return df, df_followers
 #
 
-def plotTrajectoryInPhase(ax, file="reducing_dt", threshold=50, central_metric="median"):
+def plotTrajectoryInPhase(ax, file="dt=1.0", threshold=50, central_metric="median", interpolate_unit=True, rand=False):
     
     path=NDSC_assets + "\\" + file + "\\" + "data.txt"
     metadf, df = loadTrajectoryData(path, must_be_int)
@@ -656,31 +656,132 @@ def plotTrajectoryInPhase(ax, file="reducing_dt", threshold=50, central_metric="
     subdf["sequence_id"] = subdf.groupby("cell")["is_gap"].cumsum()
     subdf=subdf.drop(["t_diff", "is_gap"], axis=1)
 
-    ## normalize time
+    ## normalize time, each sequence begins at 0
     pos0=subdf.columns.get_loc("time")
-    subdf.insert(pos0+1, "time_norm", subdf.groupby(["cell", "sequence_id"])["time"].transform(lambda x: x - x.min()))
+    subdf.insert(pos0+1, "time_set0", subdf.groupby(["cell", "sequence_id"])["time"].transform(lambda x: x - x.min()))
     pos0=subdf.columns.get_loc("frame")
-    subdf.insert(pos0+1, "frame_norm", subdf.groupby(["cell", "sequence_id"])["frame"].transform(lambda x: x - x.min()))
+    subdf.insert(pos0+1, "frame_set0", subdf.groupby(["cell", "sequence_id"])["frame"].transform(lambda x: x - x.min()))
 
-    # isolate frames with enougn data
-    frame_to_keep=subdf.groupby("time_norm")[["xbis", "v_dot_e1"]].count()
-    frame_to_keep=frame_to_keep.index[frame_to_keep["xbis"] >= threshold].tolist()
-    subdf=subdf[subdf["time_norm"].isin(frame_to_keep)]
-    to_plot=subdf.groupby("time_norm")[["xbis", "v_dot_e1"]].agg(["mean", "median", "std"])
-    to_plot = to_plot.reset_index()
+    ## normalize time, time belongs in [0, 1] for each sequence, interpolated with n_points points
+    ## !! cela veut dire que lorsque t_unit=0.5 : on compare des trajs à 25s avec des trajs à 50s
+    pos0=subdf.columns.get_loc("time_set0")
+    subdf.insert(pos0+1, "time_unit", subdf.groupby(["cell", "sequence_id"])["time"].transform(lambda x: (x - x.min()) / (x.max() - x.min())))
+    
+    ## for convenience, each trajectory is interpolated (1D) on a hundred of points
+    n_points=100
+    if interpolate_unit:
+        time_bins = np.linspace(0., 1., n_points)
+    else:
+        max_time = subdf.groupby("cell")["time"].max().max()
+        time_bins = np.linspace(0., max_time, n_points)
 
-    # preparation color line
-    x = to_plot[("xbis", central_metric)].values
-    y = to_plot[("v_dot_e1", central_metric)].values
-    time = to_plot["time_norm"].values / 60.
+    
+    from scipy.interpolate import interp1d
+    def interpolateTrajectory(group):
+        if len(group) < 2:
+            return None
+    
+        if interpolate_unit:
+            c="time_unit"
+            fill_value="extrapolate"
+        else:
+            c="time"
+            fill_value=np.nan
+        #
 
+        group = group.sort_values(c)
+        # Interpolation functions
+        fA = interp1d(group[c], group["xbis"], kind="linear", bounds_error=False, fill_value=fill_value)
+        fB = interp1d(group[c], group["v_dot_e1"], kind="linear", bounds_error=False, fill_value=fill_value)
+
+        return pd.DataFrame({
+            "time_unit": time_bins,
+            "xbis": fA(time_bins),
+            "v_dot_e1": fB(time_bins)
+        })
+    #
+
+    # Interpolation
+    interpolated = subdf.groupby(["cell", "sequence_id"]).apply(interpolateTrajectory)
+    #
+
+    if central_metric in ["median", "mean"]:
+        # isolate frames with enough data
+        frame_to_keep=subdf.groupby("time_set0")[["xbis", "v_dot_e1"]].count()
+        frame_to_keep=frame_to_keep.index[frame_to_keep["xbis"] >= threshold].tolist()
+        subdf=subdf[subdf["time_set0"].isin(frame_to_keep)]
+        to_plot=subdf.groupby("time_set0")[["xbis", "v_dot_e1"]].agg(["mean", "median", "std"])
+        to_plot = to_plot.reset_index()
+
+        # preparation color line
+        x = to_plot[("xbis", central_metric)].values
+        y = to_plot[("v_dot_e1", central_metric)].values
+        time = to_plot["time_set0"].values / 60.
+    #
+
+    if central_metric in ["medoid_unit"]:
+        from scipy.spatial.distance import cdist
+        
+        # Format 1 line = 1 cell, columns = [A(t=1), B(t=1), A(t=2), B(t=2), ...]
+        trajectories_matrix = []
+        idx_list = []
+
+        for idx, group in interpolated.groupby(level=["cell", "sequence_id"]):
+            traj_vector = np.concatenate([group["xbis"].values, group["v_dot_e1"].values])
+            trajectories_matrix.append(traj_vector)
+            idx_list.append(idx)
+        #
+        trajectories_matrix = np.array(trajectories_matrix)
+
+        # compute distance for each pair of point
+        distances = cdist(trajectories_matrix, trajectories_matrix, metric="euclidean")
+
+        # Find medoid
+        medoid_idx = np.argmin(distances.sum(axis=1))
+        medoid_id = idx_list[medoid_idx]
+    
+        # medoid trajectory
+        medoid_traj = interpolated.loc[medoid_id].reset_index(drop=True)
+        
+        # preparation color line
+        x = medoid_traj["xbis"].values
+        y = medoid_traj["v_dot_e1"].values
+        time = medoid_traj["time_unit"].values
+    #
+
+    if central_metric in ["medoid_temp"]:
+        def point_medoid_at_time(group):
+            from scipy.spatial.distance import cdist
+
+            if len(group)>threshold:
+                points = group[['xbis', 'v_dot_e1']].values
+                
+                # Distance entre tous les points à cet instant
+                distances = cdist(points, points, metric='euclidean')
+    
+                # Point avec distance totale minimale = médoïde
+                medoid_idx = np.argmin(distances.sum(axis=1))
+    
+                return pd.Series({
+                    'xbis': points[medoid_idx, 0],
+                    'v_dot_e1': points[medoid_idx, 1]
+                })
+        
+        medoid_traj = subdf.groupby("time_set0").apply(point_medoid_at_time).reset_index()
+        # preparation color line
+        x = medoid_traj["xbis"].values
+        y = medoid_traj["v_dot_e1"].values
+        time = medoid_traj["time_set0"].values / 60.
+
+
+    # preparation to plot
     points = np.array([x, y]).T.reshape(-1, 1, 2)
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
     norm = plt.Normalize(time.min(), time.max())
-    lc = LineCollection(segments, cmap='magma', norm=norm)
+    lc = LineCollection(segments, cmap="magma", norm=norm)
     lc.set_array(time)
-    lc.set_linewidth(2)
+    lc.set_linewidth(5)
 
     line=ax.add_collection(lc)
     ax.autoscale()   
@@ -688,21 +789,70 @@ def plotTrajectoryInPhase(ax, file="reducing_dt", threshold=50, central_metric="
     cax = inset_axes(ax,
                      width="5%",
                      height="45%",
-                     loc='upper left',
+                     loc="center left",
                      borderpad=0.5)
     
-    cbar = plt.colorbar(line, cax=cax, orientation='vertical')
-    cbar.set_label(r'Time (min)', fontsize=15)
+    cbar = plt.colorbar(line, cax=cax, orientation="vertical")
+    cbar.set_label(r"Time", fontsize=15)
     cax.tick_params(labelsize=10)
 
-    ax.scatter(x, y, c=time, cmap='magma', s=20, zorder=3, edgecolors='black', linewidth=0.5)
-    ax.scatter(x[0], y[0], color="black", marker="d", s=100, zorder=3)
+    ax.scatter(x, y, c=time, cmap="magma", s=50, zorder=10, edgecolors="black", linewidth=0.5)
+    #ax.scatter(x[0], y[0], color="black", marker="d", s=100, zorder=10)
+
+    # Tracer quelques trajectoires individuelles (semi-transparentes)
+    sample_idx=[187, 20, 140, 222, 185]
+    if rand:
+        sample_idx = random.sample(list(subdf["cell"].unique()), 5)
+
+    for idx in sample_idx:
+        traj = subdf[subdf["cell"] == idx]
+        traj=traj[traj["sequence_id"]==1]
+
+        # preparation color line
+        x1 = traj["xbis"].values
+        y1 = traj["v_dot_e1"].values
+        time1 = traj["time_set0"].values / 60.
+
+        points1 = np.array([x1, y1]).T.reshape(-1, 1, 2)
+        segments1 = np.concatenate([points1[:-1], points1[1:]], axis=1)
+
+        norm = plt.Normalize(time1.min(), time1.max())
+        lc1 = LineCollection(segments1, cmap="magma", norm=norm, alpha=0.4)
+        lc1.set_array(time1)
+        lc1.set_linewidth(2)
+
+        line=ax.add_collection(lc1)
+        ax.autoscale()   
+
+        #ax.scatter(x1, y1, c=time1, 
+        #           cmap="magma", 
+        #           alpha=0.4, 
+        #           s=20, 
+        #           zorder=3, 
+        #           edgecolors="black", 
+        #           linewidth=0.5)
+        
+        # initial condition
+        start = subdf[subdf["cell"] == idx].iloc[0]
+        ax.scatter(start["xbis"], start["v_dot_e1"], 
+                   s=100, 
+                   marker="d", 
+                   alpha=.4,
+                   color="black",  
+                   linewidth=2)
+    
     ax.set_xlim(left=0., right=0.5)
     ax.set_ylim(bottom=-1., top=1.)
     ax.set_yticks([-1., -.5, 0., .5, 1.])
     ax.set_xlabel(r"$x/\lambda$", fontsize=20)
     ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
 #
+    
+
+
+
+
+
 
 
 
@@ -723,9 +873,9 @@ NDSC_assets=os.path.join(root, substrate_regime, "assets", study)
 DSC_assets=os.path.join(root, substrate_regime, "assets", study)
 
 # list of metadata which must be integers
-must_be_int = ['Surface Index', 'Number of Cells']
+must_be_int = ["Surface Index", "Number of Cells"]
 
-assumptions=['NDSC', 'DSC']
+assumptions=["NDSC", "DSC"]
 mapping_path_assumption={"NDSC":NDSC_assets, "DSC":DSC_assets}
 
 ## conditions experimentales
@@ -745,11 +895,11 @@ celerities = [.7]
 NbLignes, NbColonnes=2, 5
 Largeur, Hauteur = 23, 10
 Largeur_ins, Hauteur_ins = 2.5, 2.5
-fig1 = plt.figure(num='curvature_traj', figsize=(Largeur, Hauteur), constrained_layout=True)
+fig1 = plt.figure(num="curvature_traj", figsize=(Largeur, Hauteur), constrained_layout=True)
 gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
 
 ## font size
-plt.rcParams.update({'font.size': 15})
+plt.rcParams.update({"font.size": 15})
 
 ax1 = fig1.add_subplot(gs1[:, 0])
 ax2 = fig1.add_subplot(gs1[:, 1])
@@ -762,23 +912,23 @@ ax8 = fig1.add_subplot(gs1[1, 4])
 
 ## add labels
 def add_label(ax, txt, x=-0.05, y=1.1):
-    ax.text(x, y, txt, transform=ax.transAxes, fontsize=20, fontweight='bold', va='top', ha='right')
+    ax.text(x, y, txt, transform=ax.transAxes, fontsize=20, fontweight="bold", va="top", ha="right")
 #
 
-add_label(ax1, 'A', y=1.04)
-add_label(ax2, 'B', y=1.04)
-add_label(ax3, 'C')
-add_label(ax4, 'D')
-add_label(ax5, 'F')
-add_label(ax6, 'G')
-add_label(ax7, 'E')
-add_label(ax8, 'H')
+add_label(ax1, "A", y=1.04)
+add_label(ax2, "B", y=1.04)
+add_label(ax3, "C")
+add_label(ax4, "D")
+add_label(ax5, "F")
+add_label(ax6, "G")
+add_label(ax7, "E")
+add_label(ax8, "H")
 
 
 
 
-show=False
-save=True
+show=True
+save=False
 path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 
 # ================================================================================================================
@@ -798,7 +948,7 @@ path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 ##       (a) e1.v<0   (b) e1.v>0
 
 
-print('--------- open data')
+print("--------- open data")
 path=NDSC_assets + "\\" + file + "\\" + "data.txt"
 
 # open file
@@ -809,14 +959,14 @@ data, data_followers=prepareData(metadata, data)
 
 
 
-print('--------- plot')
+print("--------- plot")
 
 plotCurvatureVsXaxis(metadata, ax=ax3)
 plotTimeAsFollower(data, ax=ax5, report=False)
 plotVsTime(metadata, data_followers, axs=[ax1, ax2], rand=False, N=1)
 plotAlignementCurvaturePhase(data_followers, Nt=1, ax=ax7)
 plotSpeedInPhase(metadata, data_followers, axs=[ax6, ax8])
-plotTrajectoryInPhase(ax=ax4, threshold=110, central_metric="median")
+plotTrajectoryInPhase(ax=ax4, file="dt=0.5", threshold=110, central_metric="medoid_unit", rand=False)
 
 
 if show:
