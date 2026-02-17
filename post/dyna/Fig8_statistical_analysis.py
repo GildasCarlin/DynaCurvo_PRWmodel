@@ -16,6 +16,7 @@ import pandas as pd
 #import scikit_posthocs as sp
 #import openturns as ot
 import random
+from scipy.spatial.distance import cdist
 
 import matplotlib.pyplot as plt
 #import matplotlib.patches as mpatches
@@ -479,7 +480,7 @@ def plotCurvatureVsXaxis(metadata, ax):
     L=metadata["Wavelength"]
 
     # X axis
-    x = np.linspace(0., .5*L, 200)
+    x = np.linspace(0., L, 200)
     k=2.*np.pi/L
 
     # functions definition
@@ -519,7 +520,7 @@ def plotCurvatureVsXaxis(metadata, ax):
     cax = inset_axes(ax,
                      width="45%",
                      height="5%",
-                     loc="upper right",
+                     loc="upper center",
                      borderpad=1.)
     
     cbar = plt.colorbar(line, cax=cax, orientation="horizontal")
@@ -531,7 +532,7 @@ def plotCurvatureVsXaxis(metadata, ax):
     ax.set_ylabel(r"$h(x)/a$", fontsize=20)
 
     alpha=.2
-    poss=[0.0, .05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .45, .5]
+    poss=[.05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .44, .55, .6, .65, .75, .8, .85, .9, .95]
     for pos in poss:
         ax.arrow(x=pos,
                  y=h(pos*L)/A,
@@ -544,13 +545,13 @@ def plotCurvatureVsXaxis(metadata, ax):
                  head_width=.02,
                  head_length=.01)
     
-    ax.set_xticks([0., 0.1, 0.2, 0.3, 0.4, 0.5])
+    ax.set_xticks([0., 0.25, 0.5, .75, 1.])
     ax.set_yticks([-1., -.5, 0., .5, 1.])
 
     import matplotlib.lines as mlines
     arrow_patch = mlines.Line2D([], [], color="indianred", marker=">", markersize=10, linestyle="-", linewidth=2)
     handles=[arrow_patch]
-    ax.legend(handles=handles, labels=[r"$\vec{\nabla}H\cdot \hat{k}$"], loc=7, fontsize=15)
+    ax.legend(handles=handles, labels=[r"$\vec{\nabla}H\cdot \hat{k}$"], loc=4, fontsize=14)
 #
 
 def plotSpeedInPhase(metadata, df, axs, Nt=1):
@@ -642,7 +643,13 @@ def prepareData(metadf, df):
     return df, df_followers
 #
 
-def plotTrajectoryInPhase(ax, file="dt=1.0", threshold=50, central_metric="median", interpolate_unit=True, rand=False):
+def plotTrajectoryInPhase(ax,
+                          file="dt=1.0",
+                          threshold=50,
+                          central_metric="median",
+                          interpolate=True,                   ## trajectories are interpolated or not (on a hundred of points)
+                          time_interpolation_method=True,     ## if interpolated, time is unit (between [0, 1], True) or physical time (False)
+                          rand=False):                        ## a few trajectory are plotted along with the global trajectory
     
     path=NDSC_assets + "\\" + file + "\\" + "data.txt"
     metadf, df = loadTrajectoryData(path, must_be_int)
@@ -662,47 +669,56 @@ def plotTrajectoryInPhase(ax, file="dt=1.0", threshold=50, central_metric="media
     pos0=subdf.columns.get_loc("frame")
     subdf.insert(pos0+1, "frame_set0", subdf.groupby(["cell", "sequence_id"])["frame"].transform(lambda x: x - x.min()))
 
-    ## normalize time, time belongs in [0, 1] for each sequence, interpolated with n_points points
-    ## !! cela veut dire que lorsque t_unit=0.5 : on compare des trajs à 25s avec des trajs à 50s
+    ## normalize time, EACH sequence is between [0, 1] !! cela veut dire que lorsque t_unit=0.5 : on compare des trajs à 25s avec des trajs à 50s
     pos0=subdf.columns.get_loc("time_set0")
     subdf.insert(pos0+1, "time_unit", subdf.groupby(["cell", "sequence_id"])["time"].transform(lambda x: (x - x.min()) / (x.max() - x.min())))
+
+    ## normalize time compared to the max Time. Sequences belong to [0, 1] but can be shorter
+    pos0=subdf.columns.get_loc("time_unit")
+    Tmax, Tmin=subdf["time"].max(), subdf["time"].min()
+    subdf.insert(pos0+1, "time_norm", subdf.groupby(["cell", "sequence_id"])["time"].transform(lambda x: (x - Tmin) / (Tmax - Tmin)))
     
     ## for convenience, each trajectory is interpolated (1D) on a hundred of points
-    n_points=100
-    if interpolate_unit:
-        time_bins = np.linspace(0., 1., n_points)
-    else:
-        max_time = subdf.groupby("cell")["time"].max().max()
-        time_bins = np.linspace(0., max_time, n_points)
+    if interpolate:
+        n_points=100
+        if time_interpolation_method in ["unit", "norm"]:
+            time_bins = np.linspace(0., 1., n_points)
+        else:
+            max_time = subdf.groupby("cell")["time"].max().max()
+            time_bins = np.linspace(0., max_time, n_points)
 
     
-    from scipy.interpolate import interp1d
-    def interpolateTrajectory(group):
-        if len(group) < 2:
-            return None
+        from scipy.interpolate import interp1d
+        def interpolateTrajectory(group):
+            if len(group) < 2:
+                return None
+        
+            if time_interpolation_method=="unit":
+                c="time_unit"
+                fill_value="extrapolate"
+            if time_interpolation_method=="norm":
+                c="time_norm"
+                fill_value="extrapolate"
+            if time_interpolation_method=="phys":
+                c="time"
+                fill_value=np.nan
+            #
     
-        if interpolate_unit:
-            c="time_unit"
-            fill_value="extrapolate"
-        else:
-            c="time"
-            fill_value=np.nan
+            group = group.sort_values(c)
+            # Interpolation functions
+            fA = interp1d(group[c], group["xbis"], kind="linear", bounds_error=False, fill_value=fill_value)
+            fB = interp1d(group[c], group["v_dot_e1"], kind="linear", bounds_error=False, fill_value=fill_value)
+    
+            return pd.DataFrame({
+                "time_unit": time_bins,
+                "xbis": fA(time_bins),
+                "v_dot_e1": fB(time_bins)
+            })
         #
 
-        group = group.sort_values(c)
-        # Interpolation functions
-        fA = interp1d(group[c], group["xbis"], kind="linear", bounds_error=False, fill_value=fill_value)
-        fB = interp1d(group[c], group["v_dot_e1"], kind="linear", bounds_error=False, fill_value=fill_value)
-
-        return pd.DataFrame({
-            "time_unit": time_bins,
-            "xbis": fA(time_bins),
-            "v_dot_e1": fB(time_bins)
-        })
-    #
-
-    # Interpolation
-    interpolated = subdf.groupby(["cell", "sequence_id"]).apply(interpolateTrajectory)
+        # Interpolation
+        interpolated = subdf.groupby(["cell", "sequence_id"]).apply(interpolateTrajectory)
+        #
     #
 
     if central_metric in ["median", "mean"]:
@@ -720,13 +736,14 @@ def plotTrajectoryInPhase(ax, file="dt=1.0", threshold=50, central_metric="media
     #
 
     if central_metric in ["medoid_unit"]:
-        from scipy.spatial.distance import cdist
+        # time is unitary (between 0 and 1) and trajectory have a constant length of 100 points (interpolated)
         
+        #
         # Format 1 line = 1 cell, columns = [A(t=1), B(t=1), A(t=2), B(t=2), ...]
         trajectories_matrix = []
         idx_list = []
 
-        for idx, group in interpolated.groupby(level=["cell", "sequence_id"]):
+        for idx, group in subdf.groupby(level=["cell", "sequence_id"]):
             traj_vector = np.concatenate([group["xbis"].values, group["v_dot_e1"].values])
             trajectories_matrix.append(traj_vector)
             idx_list.append(idx)
@@ -749,55 +766,76 @@ def plotTrajectoryInPhase(ax, file="dt=1.0", threshold=50, central_metric="media
         time = medoid_traj["time_unit"].values
     #
 
-    if central_metric in ["medoid_temp"]:
-        def point_medoid_at_time(group):
-            from scipy.spatial.distance import cdist
+    if central_metric in ["medoid_dba"]:
+        from tslearn.metrics import dtw
+        #from tslearn.barycenters import softdtw_barycenter
 
-            if len(group)>threshold:
-                points = group[['xbis', 'v_dot_e1']].values
-                
-                # Distance entre tous les points à cet instant
-                distances = cdist(points, points, metric='euclidean')
-    
-                # Point avec distance totale minimale = médoïde
-                medoid_idx = np.argmin(distances.sum(axis=1))
-    
-                return pd.Series({
-                    'xbis': points[medoid_idx, 0],
-                    'v_dot_e1': points[medoid_idx, 1]
-                })
+        def dtw_AB(traj1, traj2):
+            # traj1, traj2 : arrays shape (T1, 2) et (T2, 2)
+            return dtw(traj1, traj2)  # distance DTW multivariée
+        #
+
+        def compute_medoid_dtw(trajs):
+            n = len(trajs)
+            dist_mat = np.zeros((n, n))
+
+            # matrice des distances (symétrique)
+            for i in range(n):
+                for j in range(i + 1, n):
+                    d = dtw_AB(trajs[i], trajs[j])
+                    dist_mat[i, j] = d
+                    dist_mat[j, i] = d
+
+            # somme des distances pour chaque trajectoire
+            sum_dists = dist_mat.sum(axis=1)
         
-        medoid_traj = subdf.groupby("time_set0").apply(point_medoid_at_time).reset_index()
-        # preparation color line
-        x = medoid_traj["xbis"].values
-        y = medoid_traj["v_dot_e1"].values
-        time = medoid_traj["time_set0"].values / 60.
+            # indice du médoïde
+            medoid_idx = np.argmin(sum_dists)
+            return medoid_idx, trajs[medoid_idx]
+        #
 
+        ## formatage
+        trajectories, trajectory_ids = [], []
+        for (idx, sequence), group in subdf.groupby(["cell", "sequence_id"]):
+            if len(group)>30:  ## to get a long enough medoid
+                traj=group[["xbis", "v_dot_e1"]].values
+                trajectories.append(traj)
+                trajectory_ids.append((idx, sequence))
 
-    # preparation to plot
-    points = np.array([x, y]).T.reshape(-1, 1, 2)
-    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+        print("Number of trajectories:", len(trajectories))
+        medoid_idx, medoid_traj = compute_medoid_dtw(trajectories) 
 
-    norm = plt.Normalize(time.min(), time.max())
-    lc = LineCollection(segments, cmap="magma", norm=norm)
-    lc.set_array(time)
-    lc.set_linewidth(5)
+        ### marche pas bien (car c'est une moyenne pas un médoïde)
+        #medoid_traj_test=softdtw_barycenter(trajectories[:100], max_iter=5, gamma=1.)
+        #ax.plot(medoid_traj_test[:,0], medoid_traj_test[:,1], "-o", color="green", zorder=10)
 
-    line=ax.add_collection(lc)
-    ax.autoscale()   
+        ax.plot(medoid_traj[:,0], medoid_traj[:,1], "-", color="black", linewidth=5, zorder=10)
+        ax.scatter(medoid_traj[0,0], medoid_traj[0,1], marker="d", color="black", facecolor=None, s=150, zorder=11)
+    #
+    if central_metric not in ["medoid_dba"]:
+        # preparation to plot
+        points = np.array([x, y]).T.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
-    cax = inset_axes(ax,
-                     width="5%",
-                     height="45%",
-                     loc="center left",
-                     borderpad=0.5)
+        norm = plt.Normalize(time.min(), time.max())
+        lc = LineCollection(segments, cmap="magma", norm=norm)
+        lc.set_array(time)
+        lc.set_linewidth(5)
     
-    cbar = plt.colorbar(line, cax=cax, orientation="vertical")
-    cbar.set_label(r"Time", fontsize=15)
-    cax.tick_params(labelsize=10)
-
-    ax.scatter(x, y, c=time, cmap="magma", s=50, zorder=10, edgecolors="black", linewidth=0.5)
-    #ax.scatter(x[0], y[0], color="black", marker="d", s=100, zorder=10)
+        line=ax.add_collection(lc)
+        ax.autoscale()   
+    
+        cax = inset_axes(ax,
+                         width="5%",
+                         height="45%",
+                         loc="center left",
+                         borderpad=0.5)
+        
+        cbar = plt.colorbar(line, cax=cax, orientation="vertical")
+        cbar.set_label(r"Time", fontsize=15)
+        cax.tick_params(labelsize=10)
+    
+        ax.scatter(x, y, c=time, cmap="magma", s=50, zorder=10, edgecolors="black", linewidth=0.5)
 
     # Tracer quelques trajectoires individuelles (semi-transparentes)
     sample_idx=[187, 20, 140, 222, 185]
@@ -822,15 +860,26 @@ def plotTrajectoryInPhase(ax, file="dt=1.0", threshold=50, central_metric="media
         lc1.set_linewidth(2)
 
         line=ax.add_collection(lc1)
-        ax.autoscale()   
+        ax.autoscale()
 
-        #ax.scatter(x1, y1, c=time1, 
-        #           cmap="magma", 
-        #           alpha=0.4, 
-        #           s=20, 
-        #           zorder=3, 
-        #           edgecolors="black", 
-        #           linewidth=0.5)
+        if central_metric in ["medoid_dba"] and idx==sample_idx[0]:
+            cax = inset_axes(ax,
+                         width="5%",
+                         height="45%",
+                         loc="center left",
+                         borderpad=0.5)
+        
+            cbar = plt.colorbar(line, cax=cax, orientation="vertical")
+            cbar.set_label(r"Time (min)", fontsize=15)
+            cax.tick_params(labelsize=10)
+
+        ax.scatter(x1, y1, c=time1, 
+                   cmap="magma", 
+                   alpha=0.4, 
+                   s=20, 
+                   zorder=3, 
+                   edgecolors="black", 
+                   linewidth=0.5)
         
         # initial condition
         start = subdf[subdf["cell"] == idx].iloc[0]
@@ -927,8 +976,8 @@ add_label(ax8, "H")
 
 
 
-show=True
-save=False
+show=False
+save=True
 path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 
 # ================================================================================================================
@@ -966,7 +1015,13 @@ plotTimeAsFollower(data, ax=ax5, report=False)
 plotVsTime(metadata, data_followers, axs=[ax1, ax2], rand=False, N=1)
 plotAlignementCurvaturePhase(data_followers, Nt=1, ax=ax7)
 plotSpeedInPhase(metadata, data_followers, axs=[ax6, ax8])
-plotTrajectoryInPhase(ax=ax4, file="dt=0.5", threshold=110, central_metric="medoid_unit", rand=False)
+plotTrajectoryInPhase(ax4,
+                      file="dt=1.0",
+                      threshold=50,
+                      central_metric="medoid_dba",
+                      interpolate=False,                   ## trajectories are interpolated or not (on a hundred of points)
+                      time_interpolation_method="physical",     ## if interpolated, time is unit (between [0, 1], True) or physical time (False)
+                      rand=True)
 
 
 if show:
