@@ -384,7 +384,6 @@ if perform_stat:
 #
 
 if save:
-
     print('\n------------------------------------ plot')
     print("... central curves")
     #plot_bary_by_c(df_last, ax=ax1, palette=Vmax_palette, plot_linear=True)

@@ -67,27 +67,39 @@ def computeCellVelocity(df, dt=15., check_unity=False, report=False):
     pos0 = df.columns.get_loc("y")
 
     ## dx and dy
-    diff_result = df.groupby("cell")[["x", "y"]].diff()
+    diff_result = df.groupby("cell")[["x", "y", "z"]].diff()
     df.insert(pos0+1, "Dx", diff_result["x"])
     df.insert(pos0+2, "Dy", diff_result["y"])
+    df.insert(pos0+1, "Dz", diff_result["z"])
 
     # vx=dx/dt and vy
     df.insert(pos0+3, "Vx", diff_result["x"]/dt)
     df.insert(pos0+4, "Vy", diff_result["y"]/dt)
+    df.insert(pos0+2, "Vz", diff_result["z"]/dt)
     df = df.dropna().reset_index(drop=True)
 
     # speed=sqrt(vx^2+vy^2)
     df.insert(pos0+5, "speed", (df["Vx"].pow(2) + df["Vy"].pow(2)).pow(.5))
+    df.insert(pos0+3, "speed3D", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
+    df.insert(pos0+4, "abs_error_speed", (df["speed"] - df["speed3D"]).abs())
+    df.insert(pos0+5, "relative_error_speed", 100.*df["abs_error_speed"] / df["speed3D"])
 
     # normalized velocity vx_hat=vx/speed
     df.insert(pos0+6, "Vx_hat", df["Vx"]/df["speed"])
     df.insert(pos0+7, "Vy_hat", df["Vy"]/df["speed"])
+    df.insert(pos0+7, "Vz_hat", df["Vz"]/df["speed"])
     if check_unity:
         df.insert(pos0+7, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2)).pow(.5))
 
+
     if report:
         print("\n-- report on velocity")
-        print(df.head(), "\n")
+        print(df[["Dx", "Dy", "Dz", "Vx", "Vy", "Vz", "speed", "speed3D", "abs_error_speed", "relative_error_speed"]].describe(), "\n")
+
+        (fig2, axs) = plt.subplots(1, 3)
+        axs[0].hist(df["relative_error_speed"])
+        axs[1].hist(df["speed"])
+        axs[2].hist(df["speed3D"])
 
     return df
 #
@@ -618,7 +630,7 @@ def prepareData(metadf, df):
     df[["y", "theta"]] *= -1.
 
     ## compute vx, vy and speed
-    df=computeCellVelocity(df, dt=metadf["Time Interval"])
+    df=computeCellVelocity(df, dt=metadf["Time Interval"], report=False)
 
     ## compute wave vector
     df=computeWaveVector(df)
@@ -902,9 +914,6 @@ def plotTrajectoryInPhase(ax,
 
 
 
-
-
-
 # ================================================================================================================
 # ================================================================================================================
 #                                                    User interface
@@ -976,8 +985,8 @@ add_label(ax8, "H")
 
 
 
-show=False
-save=True
+show=True
+save=False
 path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 
 # ================================================================================================================
@@ -1019,7 +1028,7 @@ plotTrajectoryInPhase(ax4,
                       file="dt=1.0",
                       threshold=50,
                       central_metric="medoid_dba",
-                      interpolate=False,                   ## trajectories are interpolated or not (on a hundred of points)
+                      interpolate=False,                        ## trajectories are interpolated or not (on a hundred of points)
                       time_interpolation_method="physical",     ## if interpolated, time is unit (between [0, 1], True) or physical time (False)
                       rand=True)
 

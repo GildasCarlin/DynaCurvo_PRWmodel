@@ -7,7 +7,7 @@
  */
 //
 
-function drawArrow(x0, y0, x1, y1, c = color('rgba(236,90,43,0.8)')){
+function drawArrow(x0, y0, x1, y1, c){
   let L = sqrt((x1-x0)**2+(y1-y0)**2);
   let theta = atan2(y1-y0, x1-x0);
   

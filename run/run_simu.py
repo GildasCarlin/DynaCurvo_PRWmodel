@@ -20,7 +20,7 @@ import regex as re
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="NDSC_RightSinus_20min_VariousCelerity"
+study="DSC_looking_for_csat_NONOISE"
 
 # exported file (at the end of the simulation)
 home=os.path.expanduser("~")
@@ -37,8 +37,8 @@ path_to_assets=os.path.join("..", "post", substrate_regime, "assets", study)
 ## ------------------------------------ simulations parameters
 
 # assumptions:    cells are sensitive to curvature (K_assumption) ? cells are sensitive to the wave (W_assumption) ? 
-W_assumption = r"false"
-K_assumption = r"true"
+W_assumption = r"true"
+K_assumption = r"false"
 
 # substrate pattern:   right_sinus  /  convr_sinus  /   wells_sinus  /  snake_sinus
 pattern = "right_sinus"
@@ -50,12 +50,11 @@ initial_angle="-Math.PI/2.0"
 
 # condition
 simu_length=1200.0  # seconds
+sampling_rate=15.0
 
 # others
 export_data=r"true"
 draw_cells=r"false"
-
-
 
 
 # ================================================================================================================
@@ -92,6 +91,7 @@ def prepareUI():
     temp_content = re.sub(r"let\spsi0\s*=\s*(\d*\.?\d*);", r'let psi0='+initial_angle+r';', temp_content)
 
     temp_content = re.sub(r"let\sTmax\s*=\s*(\d*\.?\d*);", r'let Tmax='+str(simu_length)+r';', temp_content)
+    temp_content = re.sub(r"let\sdt_mesure\s*=\s*(\d*\.?\d*);", r'let dt_mesure='+str(sampling_rate)+r';', temp_content)
     temp_content = re.sub(r'let\sdata\s*=\s*(true|false);', r'let data='+export_data+r';', temp_content) 
     temp_content = re.sub(r'let\sdraw_cells\s*=\s*(true|false);', r'let draw_cells='+draw_cells+r';', temp_content)
 
@@ -134,6 +134,7 @@ path_to_simu = searchFilesToAnalyse(path_to_assets)
 total_number_of_simu=len(path_to_simu)
 print("Number of simulations to run:", total_number_of_simu)
 
+# parameters which are commun to all simulations
 prepareUI()
 
 count=0
@@ -147,6 +148,7 @@ for path in path_to_simu:
     (wl, c) = re.findall(r'L=(\d+\.\d+|\d+)\\c=(\d+\.\d+|\d+)', path)[0]
     
     print('... parameters  {}µm  {}µm/s'.format(wl, c))
+    # parameters which are specific to this simulation
     editUI(wl, c)
 
     # run simulation

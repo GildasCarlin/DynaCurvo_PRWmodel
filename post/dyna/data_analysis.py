@@ -164,12 +164,10 @@ def computeCellVelocity(df, dt=15., check_unity=False, report=False):
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="NDSC_RightSinus_20min_VariousCelerity"
+study="DSC_looking_for_csat_NONOISE"
 
 # assets
 path_to_assets=os.path.join(os.getcwd(), substrate_regime, "assets", study)
-
-
 
 # list of metadata which must be integers
 must_be_int = ['Surface Index', 'Number of Cells']

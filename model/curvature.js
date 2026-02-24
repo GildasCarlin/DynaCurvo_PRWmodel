@@ -296,12 +296,21 @@ function metricTensor(pos, t, params){
 //  return [hxx, hyy, hxy].map(K => K/sqrt(g));
 //}
 
+function Christoffel(pos, t, params){
+  let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
+  let g=1.0+hx**2.0+hy**2.0;
+
+  return [hxx*hx, hxy*hx, hyy*hx, hxx*hy, hxy*hy, hyy*hy].map(G => G/g);
+}
+
 function meanCurvature(pos, t, params){
   let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
   return 0.5 * ((1.0+hx**2.0)*hyy + (1.0+hy**2.0)*hxx - 2.0*hx*hy*hxy) / (1.0+hx**2.0+hy**2.0)**1.5;
 }
 
 function gradCurvature(pos, t, params){
+  // returns the gradient of mean curvature in the euclidean (x,y) plane
+  // returns also its perpendicular vector which forms a local basis
   let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
   let [g, gxx, gyy, gxy] = metricTensor(pos, t, params);
 
@@ -318,6 +327,36 @@ function gradCurvature(pos, t, params){
   let gradH_perp = createVector(-1.0*gradH.y, gradH.x);
   return [gradH, gradH_perp];
 }
+
+function TangentLocalBasis(pos, t, params){
+  let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
+  return [createVector(1.0, 0.0, hx), createVector(0.0, 1.0, hy), createVector(-hx, -hy, 1.0)];
+
+}
+
+function MetricDotProduct(pos, t, params, V1, V2){
+  // returns the dot product of two vectors expressed in the local tangent plane.
+  let [g, gxx, gyy, gxy] = metricTensor(pos, t, params);
+  return gxx*V1.x*V2.x + gxy*V1.x*V2.y + gxy*V1.y*V2.x + gyy*V1.y*V2.y;
+}
+
+function TangentGradCurvature(pos, t, params){
+  // returns the gradient of mean curvature in the local tangent plane 
+  // returns also its perpendicular vector (included in the plane) which forms a local basis. Both are normalized.
+  let [gradH, gradH_perp] = gradCurvature(pos, t, params);
+  let [g, gxx, gyy, gxy] = metricTensor(pos, t, params);
+
+  let g_contra=[[gyy, -gxy], [-gxy, gxx]].map(row => row.map(val => val/g));
+  let gradSH = MatrixVectorProduct(g_contra, gradH);
+  let norm = sqrt(MetricDotProduct(pos, t, params, gradSH, gradSH));
+  gradSH=gradSH.div(norm);
+
+  let gradSH_perp = createVector(-1.0*gradSH.y, gradSH.x);
+  gradSH_perp=gradSH_perp.div(sqrt(MetricDotProduct(pos, t, params, gradSH_perp, gradSH_perp)));
+
+  return [norm, gradSH, gradSH_perp];
+}
+
 
 
 

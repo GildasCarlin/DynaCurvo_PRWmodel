@@ -55,6 +55,15 @@ function MatrixTranspose(matrixA){
             [matrixA[0][1], matrixA[1][1]]];
 }
 
+function MatrixInverse(matrixA){
+    // takes as input: a 2x2 squared matrix 
+    // returns: the inverse matrix A^-1
+
+    let det=matrixA[0][0]*matrixA[1][1] - matrixA[0][1]*matrixA[1][0];
+    return [[matrixA[1][1], -matrixA[1][0]],
+            [-matrixA[0][1], matrixA[0][0]]].map(row => row.map(val => val/det));
+}
+
 function MatrixMatrixProduct(matrixA, matrixB){
     // takes as input: two 2x2 squared matrix 
     // returns: the product A.B 
@@ -75,6 +84,12 @@ function DoubleDotProduct(matrixA, matrixB){
     return sum;
 }
 
+function CrossProduct(vecA, vecB){
+  // takes as input: two 3D vectors
+  // returns: the cross product 
+  return createVector(vecA.y*vecB.z - vecA.z*vecB.y, vecA.z*vecB.x - vecA.x*vecB.z, vecA.x*vecB.y - vecA.y*vecB.x);
+}
+
 function HeavisideStepFunction(s, m=0.0){
   if (s<0.0) return 0.0;
   if (s>0.0) return 1.0;
@@ -86,13 +101,18 @@ function LogisticFunction(t, param){
   return param[0]/(1.0+exp(-param[1]*(t-param[2])));
 }
 
+function Rotation3DAroundAxis(N, u, alpha, to_normalize){
+  // Rodrigues formula to rotate a 3D vector expressed in (x,y,z) around a unit-length axis N expressed also in (x,y,z) 
+  // https://fr.wikipedia.org/wiki/Rotation_vectorielle
 
-
-
-
-
-
-
+  u=u.copy().mult(cos(alpha)).add(N.copy().mult((1.0-cos(alpha))*u.dot(N))).add(CrossProduct(N, u).mult(sin(alpha)));
+  
+  if (to_normalize){
+    return u.normalize();
+  } else{
+    return u;
+  }
+}
 
 
 
