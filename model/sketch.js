@@ -12,7 +12,6 @@
 
 // I. Surface 
 //-------------------------------------------------------------------------------------------------------
-
 // a surface is defined by an explicit string 'flat' or 'right_sinus' or by an index 0 or 1 respectively
 let surface_repertory={"flat":0,
                        "right_sinus":1,
@@ -158,6 +157,19 @@ function drawTimer(font, t) {
   pop();
 }
 
+function drawSpeedometer(font, val) {
+  if (nbCell==1){
+    push();
+    fill('black');
+    textFont(font, 22);
+    rect(-0.47*width, -0.3*height,115.0,60);
+    fill('white');
+    text("Cell Speed", -0.466*width, -0.275*height, 800);
+    text(val.toFixed(2).toString(), -0.4257*width, -0.24*height, 800); // µm/s
+    pop();
+  }
+}
+
 function initBackground(t){
   background(240);
   
@@ -259,6 +271,10 @@ function draw(){
   // sketch of the scale bar and the chronometer
   drawScaleBar(inconsolata);
   drawTimer(inconsolata, timer_sec);
+  if (nbCell==1){
+    drawSpeedometer(inconsolata, sqrt(MetricDotProduct(cells[0].position, timer_sec, angleParams, cells[0].velocity, cells[0].velocity)));
+  }
+  
 
   //stop recording video
   if (screen){ 
@@ -270,15 +286,46 @@ function draw(){
     }
   }
 
+  //let X=[30.0];
+  //let Y=[0.0];
+  //for (const x of X){
+  //  for (const y of Y){
+  //    let posiF=createVector(x, y);
+  //    let H=meanCurvature(posiF, timer_sec, angleParams);
+  //    let K=gaussianCurvature(posiF, timer_sec, angleParams);
+//
+  //    push();
+  //    fill('black');
+  //    stroke(0);
+  //    translate(x, y);
+  //    ellipse(0, 0, 2.0, 2.0);
+  //    pop();
+//
+  //    let [gradf, gradpf]=gradCurvature(posiF, timer_sec, angleParams);
+  //    let gradGf=gradGaussianCurvature(posiF, timer_sec, angleParams);
+  //    drawVector(x, y, gradf.copy().mult(15000), 'red');
+  //    //drawVector(x, y, gradGf.copy().mult(700000), 'green');
+//
+  //    let [k1, k2, v1, v2]=PrincipalCurvature(posiF, timer_sec, angleParams);
+  //    let [kxx, kyy, kxy] = curvatureTensor(posiF, timer_sec, angleParams)
+  //    console.log("-------- -----------");
+  //    //console.log("H, K=", (H**2.0).toFixed(5), K.toFixed(5));
+  //    console.log("kxx, kyy, kxy", kxx.toFixed(5), kyy.toFixed(5), kxy.toFixed(5))
+  //    console.log("k1=", k1.toFixed(5));
+  //    console.log("k2=", k2.toFixed(5));
+  //    //drawVector(x, y, v1.copy().mult(25), 'red');
+  //    //drawVector(x, y, v2.copy().mult(20), 'green');
+  //  }
+  //}
 
   //let xm=-200.0;//+Math.cos(psi0)*c*timer_sec;  //x*Math.sin(psi) + y*Math.cos(psi)
   //let ym=0.0-c*timer_sec;
   //let posiM=createVector(xm, ym);
   //
-  //let xf=50.0, yf=0.0;
+  //let xf=60.0, yf=0.0;
   //let posiF=createVector(xf, yf);
 
-  //let H=meanCurvature(posiF, timer_sec, angleParams);
+
 
   //push();
   //fill('red');
@@ -287,24 +334,22 @@ function draw(){
   //ellipse(0, 0, 10.0, 10.0);
   //pop();
 
-  //push();
-  //fill('black');
-  //stroke(0);
-  //translate(xf, yf);
-  //ellipse(0, 0, 10.0, 10.0);
-  //pop();
+
 
   //let [gradf, gradpf]=gradCurvature(posiF, timer_sec, angleParams);
   //let [gradm, gradpm]=gradCurvature(posiM, timer_sec, angleParams);
-  //drawVector(xf, yf, gradf.copy().mult(9000), 'red');
-  //drawVector(xm, ym, gradm.copy().mult(9000), 'red');
+  //let gradGf=gradGaussianCurvature(posiF, timer_sec, angleParams);
+  //drawVector(xf, yf, gradf.copy().mult(15000), 'red');
+  //drawVector(xf, yf, gradGf.copy().mult(1000000), 'green');
+  //drawVector(xm, ym, gradm.copy().mult(10000000), 'red');
   //let speedM=phaseVelocity(posiM, timer_sec, angleParams);
   //let speedF=phaseVelocity(posiF, timer_sec, angleParams);
   //drawVector(xf, yf, speedF.copy().mult(100), 'red');
   //drawVector(xm, ym, speedM.copy().mult(100), 'red');
 
-  //console.log("------------ dans sketch.js ---------------");
+
   //console.log("H:", H.toFixed(5));
+  //console.log("K:", K.toFixed(5));
   //console.log("H max:", (0.5*a*k**2.0).toFixed(5));
   //console.log("psi :", psi0*180.0/Math.PI);
   //console.log("cos, sin :", Math.cos(psi0).toFixed(3), Math.sin(psi0).toFixed(3));

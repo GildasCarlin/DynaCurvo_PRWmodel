@@ -49,15 +49,15 @@
 let surface_title='right_sinus';
 
 let a=10.0;
-let lambda=80.0;
-let c=0.5;
+let lambda=20.0;
+let c=0.4;
 let phi0=0.0;
 
 let w=0.0;
 let psi0=-Math.PI/2.0;//-Math.PI/2.0;//Math.PI/4.0;
 let angleParams=[]; //[[Math.PI/4.0, w, 60.0]]; 
 let as = 1.25;
-let lambdas=40.0;
+let lambdas=60.0;
 
 
 
@@ -66,13 +66,13 @@ let lambdas=40.0;
 //-------------------------------------------------------------------------------------------------------
 
 // number of cells
-let nbCell=1;
+let nbCell=300;
 
 // central metric     median  /  mean
 let central_metric = 'mean';
 
 // assumption on cell dynamic    true  /  false
-let surf_assumption=false;  
+let surf_assumption=true;  
 let curv_assumption=true;
 
 // III. Model integration
@@ -89,11 +89,11 @@ let Tmax=1200.0;
 //-------------------------------------------------------------------------------------------------------
 
 // export a .txt file containing trajectories data (exported in the Downloads folder)
-let data=false;
+let data=true;
 let file_name_data = 'data';
 
 // draw 
-let draw_cells=true;
+let draw_cells=false;
 let draw_traj = false;   // deprecated if nbCell>5
 
 // record screenshot video

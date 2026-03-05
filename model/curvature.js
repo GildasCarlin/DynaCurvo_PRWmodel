@@ -289,12 +289,12 @@ function metricTensor(pos, t, params){
   return [g, gxx, gyy, gxy];
 }
 
-//function curvatureTensor(pos, t, params){
-//  let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
-//  let [g, gxx, gyy, gxy] = metricTensor(pos, t, params);
-// 
-//  return [hxx, hyy, hxy].map(K => K/sqrt(g));
-//}
+function curvatureTensor(pos, t, params){
+  let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
+  let [g, gxx, gyy, gxy] = metricTensor(pos, t, params);
+ 
+  return [hxx, hyy, hxy].map(K => K/sqrt(g));
+}
 
 function Christoffel(pos, t, params){
   let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
@@ -306,6 +306,21 @@ function Christoffel(pos, t, params){
 function meanCurvature(pos, t, params){
   let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
   return 0.5 * ((1.0+hx**2.0)*hyy + (1.0+hy**2.0)*hxx - 2.0*hx*hy*hxy) / (1.0+hx**2.0+hy**2.0)**1.5;
+}
+
+function gaussianCurvature(pos, t, params){
+  let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
+  return (hxx*hyy-hxy**2.0) / (1.0+hx**2.0+hy**2.0)**2.0;
+
+}
+
+function gradGaussianCurvature(pos, t, params){
+  let [hx, hxx, hxxx, hy, hyy, hyyy, hxy, hxxy, hxyy] = substrateSpatialDerivatives(pos, t, params);
+
+  let Kx=(hxxx*hyy+hxyy*hxx-2.0*hxxy*hxy)*(1.0+hx**2.0+hy**2.0) - 4.0*(hxx*hyy-hxy**2.0)*(hxx*hx+hxy*hy);
+  let Ky=(hyyy*hxx+hxxy*hyy-2.0*hxyy*hxy)*(1.0+hx**2.0+hy**2.0) - 4.0*(hxx*hyy-hxy**2.0)*(hyy*hy+hxy*hx);
+
+  return createVector(Kx, Ky).div((1.0+hx**2.0+hy**2.0)**3.0);
 }
 
 function gradCurvature(pos, t, params){
@@ -355,6 +370,30 @@ function TangentGradCurvature(pos, t, params){
   gradSH_perp=gradSH_perp.div(sqrt(MetricDotProduct(pos, t, params, gradSH_perp, gradSH_perp)));
 
   return [norm, gradSH, gradSH_perp];
+}
+
+function PrincipalCurvature(pos, t, params){
+  [kxx, kyy, kxy] = curvatureTensor(pos, t, params);
+
+  let sqr=sqrt(kxx**2.0+kyy**2.0-2.0*kxx*kyy+4.0*kxy**2.0);
+  let k1=0.5*(kxx+kyy + sqr);
+  let k2=0.5*(kxx+kyy - sqr);
+  let kmax=Math.max(k1, k2);
+  let kmin=Math.min(k1, k2);
+
+  let v1=NormalizeVector(createVector(1.0, -(kxx-k1)/kxy));
+  let v2=createVector(1.0, -(kxx-k2)/kxy).normalize();
+
+  //sqr=sqrt(kxy**2.0 - kyy*(kxx-kmax));
+  //let tan1 = (-kxy + sqr)/kyy;
+  //let tan2 = (-kxy - sqr)/kyy;
+//
+  //let theta1=atan(tan1);
+  //let theta2=atan(tan2);
+  //let v1=createVector(cos(theta1), sin(theta1));
+  //let v2=createVector(cos(theta2), sin(theta2));
+
+  return[k1, k2, v1, v2];
 }
 
 

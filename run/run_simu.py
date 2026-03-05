@@ -20,7 +20,7 @@ import regex as re
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="DSC_looking_for_csat_NONOISE"
+study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
 
 # exported file (at the end of the simulation)
 home=os.path.expanduser("~")
@@ -37,8 +37,8 @@ path_to_assets=os.path.join("..", "post", substrate_regime, "assets", study)
 ## ------------------------------------ simulations parameters
 
 # assumptions:    cells are sensitive to curvature (K_assumption) ? cells are sensitive to the wave (W_assumption) ? 
-W_assumption = r"true"
-K_assumption = r"false"
+W_assumption = r"false"
+K_assumption = r"true"
 
 # substrate pattern:   right_sinus  /  convr_sinus  /   wells_sinus  /  snake_sinus
 pattern = "right_sinus"

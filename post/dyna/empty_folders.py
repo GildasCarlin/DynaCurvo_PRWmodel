@@ -29,23 +29,17 @@ def search_files_to_delete(root):
 # ================================================================================================================
 # ================================================================================================================
 
-# assumption    cell_is_surfer  /  cell_is_not_surfer
-assumptions = ['cell_is_surfer']    
+## ------------------------------------ folder and paths
+
+# study
+substrate_regime="dyna"  # dyna or static
+study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+
+# assets
+path_to_assets=os.path.join(os.getcwd(), substrate_regime, "assets", study)
 
 # wavelengenth   20.0  /  40.0  /  80.0
 ws = [20.0, 40.0, 80.0]   
-
-## parameters
-para1='tau_dyna'
-para1_values=[24.0]
-
-para2='Vmax'
-para2_values=[2.0, 4.0, 6.0]
-
-## study
-study='role_of_tau_dyna'
-
-
 
 # ================================================================================================================
 # ================================================================================================================
@@ -54,24 +48,14 @@ study='role_of_tau_dyna'
 # ================================================================================================================
 
 
-print("\n------------ list of emptied folders ------------\n")
-for para1_value in para1_values:
-    for para2_value in para2_values:
-        for assumption in assumptions:
-            if assumption=='cell_is_not_surfer':
-                root_path = os.getcwd() + '\\' + study + '\\' + para1 + '=' + str(para1_value) + '\\' + assumption
-            elif assumption=='cell_is_surfer':
-                root_path = os.getcwd() + '\\' + study + '\\' + para1 + '=' + str(para1_value) + '\\' + assumption + '\\' + para2 + '=' + str(para2_value)
-            print("... root fodler to delete", root_path)
-            where_is_data = search_files_to_delete(root_path)
-            for path in where_is_data:
-                if any(re.search(pattern, path) for pattern in assumptions):
-                    if any(re.search(str(pattern), path) for pattern in ws):
-                        os.remove(path)
-                    #
-                #
-            #
-        #
+print("\n------------ list of emptied folders ------------")
+
+print("... root fodler to delete", path_to_assets)
+print("with selected conditions:", ws)
+where_is_data = search_files_to_delete(path_to_assets)
+for path in where_is_data:
+    if any(re.search(str(pattern), path) for pattern in ws):
+        os.remove(path)
     #
 #
 
