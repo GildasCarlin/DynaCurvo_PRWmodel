@@ -72,17 +72,17 @@ let nbCell=300;
 let central_metric = 'mean';
 
 // assumption on cell dynamic    true  /  false
-let surf_assumption=true;  
+let surf_assumption=false;
 let curv_assumption=true;
 
 // III. Model integration
 //-------------------------------------------------------------------------------------------------------
 
 // trajectory sample (seconds)
-let dt_mesure=15.0;
+let dt_mesure=1.0;
 
 // simulation is stopped when the window is closed. Tmax is the duration in seconds of the trajectories recording. 1200s=20min
-let Tmax=1200.0;
+let Tmax=600.0;
 
 
 // IV. Others

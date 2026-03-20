@@ -88,19 +88,11 @@ def get_Dx(metadata, data):
 # 
 
 def get_vd(metadata, data):
-    dt = metadata['Time Interval']
 
-    v_list = []
-    for i in data['cell'].unique():
-        v_list.append(data.loc[data['cell']==i, ['x', 'y']].diff().dropna().pow(2).sum(axis=1).pow(.5).div(dt).reset_index(drop=True))
-    #
-
-    df = pd.concat(v_list, ignore_index=True)
-    df = pd.DataFrame(df, columns=['vd'])
+    df = data["speed"].copy()
+    df = pd.DataFrame(df)
     df.insert(0, 'celerity', len(df)*[metadata['Wave Celerity']])
     df.insert(0, 'wavelength', len(df)*[int(metadata['Wavelength'])])
-    porcentage = len(df[df['vd']>4.5])/len(df)*100.
-    print('...porcentage of speed above 4.5µm/s: %.2f' %porcentage)
     return df
 #
 
@@ -126,23 +118,26 @@ def computeCellVelocity(df, dt=15., check_unity=False, report=False):
     pos0 = df.columns.get_loc("y")
 
     ## dx and dy
-    diff_result = df.groupby("cell")[["x", "y"]].diff()
+    diff_result = df.groupby("cell")[["x", "y", "z"]].diff()
     df.insert(pos0+1, "Dx", diff_result["x"])
     df.insert(pos0+2, "Dy", diff_result["y"])
+    df.insert(pos0+3, "Dz", diff_result["z"])
 
     # vx=dx/dt and vy
-    df.insert(pos0+3, "Vx", diff_result["x"]/dt)
-    df.insert(pos0+4, "Vy", diff_result["y"]/dt)
+    df.insert(pos0+4, "Vx", diff_result["x"]/dt)
+    df.insert(pos0+5, "Vy", diff_result["y"]/dt)
+    df.insert(pos0+6, "Vz", diff_result["z"]/dt)
     df = df.dropna().reset_index(drop=True)
 
-    # speed=sqrt(vx^2+vy^2)
-    df.insert(pos0+5, "speed", (df["Vx"].pow(2) + df["Vy"].pow(2)).pow(.5))
+    # speed=sqrt(vx^2+vy^2++vz^2)
+    df.insert(pos0+7, "speed", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
 
     # normalized velocity vx_hat=vx/speed
-    df.insert(pos0+6, "Vx_hat", df["Vx"]/df["speed"])
-    df.insert(pos0+7, "Vy_hat", df["Vy"]/df["speed"])
+    df.insert(pos0+8, "Vx_hat", df["Vx"]/df["speed"])
+    df.insert(pos0+9, "Vy_hat", df["Vy"]/df["speed"])
+    df.insert(pos0+10, "Vz_hat", df["Vz"]/df["speed"])
     if check_unity:
-        df.insert(pos0+7, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2)).pow(.5))
+        df.insert(pos0+7, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
 
     if report:
         print("\n-- report on velocity")
@@ -164,7 +159,7 @@ def computeCellVelocity(df, dt=15., check_unity=False, report=False):
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+study="DSC_lookingForCsat_fstat=0_q=0_noise=0"
 
 # assets
 path_to_assets=os.path.join(os.getcwd(), substrate_regime, "assets", study)

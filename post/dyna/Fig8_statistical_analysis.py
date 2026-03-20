@@ -7,7 +7,7 @@ import json
 import numpy as np
 
 import os
-#import regex as re
+import regex as re
 import pandas as pd
 
 #from scipy import stats
@@ -236,7 +236,7 @@ def plotVsTime(metadata, df, axs, N=10, rand=False):
 
     spec={ax1:(r"$x/\lambda$", (0., .5)), ax2:(r"$\hat{v}\cdot \vec{e}_1$", (-1., 1.))}
     # traj to plot
-    selected_id=[266, 209]
+    selected_id=[125, 233, 185]
     if rand:
         N=min(N, len(df["cell"].unique()))
         selected_id = random.sample(list(df["cell"].unique()), N)
@@ -335,15 +335,17 @@ def plotTimeAsFollower(df, ax, report=False):
     sns.histplot(data=percentage_follower,
                   stat="density",
                   ax=ax,
+                  facecolor="#FFE0C4",
                   zorder=1)
     #
 
-    ax.axvline(x=stats["50%"], linewidth=4, color="indianred", zorder=2)
+    ax.axvline(x=stats["50%"], linewidth=4, color="mediumorchid", zorder=2)
 
     ax.set_xlim(left=0., right=100.)
     ax.set_xticks([0., 25., 50., 75., 100.])
     ax.set_xlabel("% of time spent following the wave", fontsize=15)
     ax.set_ylabel("Cell count (Density)", fontsize=20)
+    
 
     if report:
         print("\n-- report on followers")
@@ -352,6 +354,11 @@ def plotTimeAsFollower(df, ax, report=False):
 #
 
 def plotAlignementCurvaturePhase(df, ax, Nt=1):
+
+    df=df.copy().reset_index(drop=True)
+    subdf_start=df.groupby("cell").head(Nt)
+    subdf_left=df.drop(subdf_start.index)
+
 
     ###### plot for non-followers
     ####sns.scatterplot(data=df1[df1["follower"]==False],
@@ -366,7 +373,7 @@ def plotAlignementCurvaturePhase(df, ax, Nt=1):
     #####
 
     ## plot for followers
-    sns.scatterplot(data=df,
+    sns.scatterplot(data=subdf_left,
               x="xbis",
               y="v_dot_e1",
               color="cyan",
@@ -378,8 +385,7 @@ def plotAlignementCurvaturePhase(df, ax, Nt=1):
     #
 
     ## plot for followers, when they begin to follow
-    subdf=df.groupby("cell").head(Nt)
-    sns.scatterplot(data=subdf,
+    sns.scatterplot(data=subdf_start,
                     x="xbis",
                     y="v_dot_e1",
                     color="black",
@@ -492,7 +498,7 @@ def plotCurvatureVsXaxis(metadata, ax):
     L=metadata["Wavelength"]
 
     # X axis
-    x = np.linspace(0., L, 200)
+    x = np.linspace(0., .5*L, 200)
     k=2.*np.pi/L
 
     # functions definition
@@ -511,8 +517,13 @@ def plotCurvatureVsXaxis(metadata, ax):
         hxx=-A*k**2.*np.cos(k*x)
         hxxx=A*k**3.*np.sin(k*x)
         return .5*(hxxx*(1.+hx**2.)**(-1.5) - 3.*hx*hxx**2.*(1.+hx**2.)**(-2.5))
-    #norm_gradH=.5*(hxxx*(1.+hx**2.)**(-1.5) - 3.*hx*hxx**2.*(1.+hx**2.)**(-2.5))
-    #testgh= (2.*(1.+hx**2.)**1.5*hxxx - 6.*(1.+hx**2.)**.5*hx*hxx**2.) / (4.*(1.+hx**2.)**3.)
+
+    def contr(x):
+        hx=-A*k*np.sin(k*x)
+        g=1./(1.+hx**2.0)
+        return [g, hx]
+    #
+
 
     # Créer les segments de ligne
     points = np.array([x/L, h(x)/A]).T.reshape(-1, 1, 2)
@@ -532,7 +543,7 @@ def plotCurvatureVsXaxis(metadata, ax):
     cax = inset_axes(ax,
                      width="45%",
                      height="5%",
-                     loc="upper center",
+                     loc="upper right",
                      borderpad=1.)
     
     cbar = plt.colorbar(line, cax=cax, orientation="horizontal")
@@ -543,13 +554,15 @@ def plotCurvatureVsXaxis(metadata, ax):
     ax.set_xlabel(r"$x/\lambda$", fontsize=20)
     ax.set_ylabel(r"$h(x)/a$", fontsize=20)
 
-    alpha=.2
-    poss=[.05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .44, .55, .6, .65, .75, .8, .85, .9, .95]
+    alpha=1.
+    poss=[.05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .45]  #[.05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .45, .55, .6, .65, .75, .8, .85, .9, .95]
     for pos in poss:
+        [g, hx]=contr(pos*L)
+        norm=np.sqrt((gH(pos*L))**2.+(gH(pos*L))**2.)
         ax.arrow(x=pos,
-                 y=h(pos*L)/A,
-                 dx=alpha*gH(pos*L)/np.max(gH(x)),
-                 dy=0.,
+                 y=0.1+h(pos*L)/A,
+                 dx=alpha*g*gH(pos*L),#, /norm,
+                 dy=alpha*g*hx*gH(pos*L),#, /norm,
                  color="indianred",
                  width=.007,
                  zorder=2,
@@ -557,13 +570,14 @@ def plotCurvatureVsXaxis(metadata, ax):
                  head_width=.02,
                  head_length=.01)
     
-    ax.set_xticks([0., 0.25, 0.5, .75, 1.])
+    ax.set_xticks([0., 0.25, 0.5])
     ax.set_yticks([-1., -.5, 0., .5, 1.])
+    
 
     import matplotlib.lines as mlines
     arrow_patch = mlines.Line2D([], [], color="indianred", marker=">", markersize=10, linestyle="-", linewidth=2)
     handles=[arrow_patch]
-    ax.legend(handles=handles, labels=[r"$\vec{\nabla}H\cdot \hat{k}$"], loc=4, fontsize=14)
+    ax.legend(handles=handles, labels=[r"$\vec{\nabla}H$"], loc="lower left", fontsize=14)
 #
 
 def plotSpeedInPhase(metadata, df, axs, Nt=1):
@@ -777,7 +791,7 @@ def plotTrajectoryInPhase(ax,
         y = medoid_traj["v_dot_e1"].values
         time = medoid_traj["time_unit"].values
     #
-
+    
     if central_metric in ["medoid_dba"]:
         from tslearn.metrics import dtw
         #from tslearn.barycenters import softdtw_barycenter
@@ -824,7 +838,7 @@ def plotTrajectoryInPhase(ax,
         ax.plot(medoid_traj[:,0], medoid_traj[:,1], "-", color="black", linewidth=5, zorder=10)
         ax.scatter(medoid_traj[0,0], medoid_traj[0,1], marker="d", color="black", facecolor=None, s=150, zorder=11)
     #
-    if central_metric not in ["medoid_dba"]:
+    if central_metric not in ["medoid_dba", ""]:
         # preparation to plot
         points = np.array([x, y]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
@@ -840,7 +854,7 @@ def plotTrajectoryInPhase(ax,
         cax = inset_axes(ax,
                          width="5%",
                          height="45%",
-                         loc="center left",
+                         loc="bottom left",
                          borderpad=0.5)
         
         cbar = plt.colorbar(line, cax=cax, orientation="vertical")
@@ -848,14 +862,19 @@ def plotTrajectoryInPhase(ax,
         cax.tick_params(labelsize=10)
     
         ax.scatter(x, y, c=time, cmap="magma", s=50, zorder=10, edgecolors="black", linewidth=0.5)
-
+    
     # Tracer quelques trajectoires individuelles (semi-transparentes)
+    # 1. select them
     sample_idx=[187, 20, 140, 222, 185]
     if rand:
-        sample_idx = random.sample(list(subdf["cell"].unique()), 5)
+        sample_idx = random.sample(list(subdf["cell"].unique()), 2)
+    sample_traj=subdf[subdf["cell"].isin(sample_idx)]
+
+    # 2. prepare colorbar
+    norm = plt.Normalize(sample_traj["time_set0"].min(), sample_traj["time_set0"].max())
 
     for idx in sample_idx:
-        traj = subdf[subdf["cell"] == idx]
+        traj = sample_traj[sample_traj["cell"] == idx]
         traj=traj[traj["sequence_id"]==1]
 
         # preparation color line
@@ -866,7 +885,7 @@ def plotTrajectoryInPhase(ax,
         points1 = np.array([x1, y1]).T.reshape(-1, 1, 2)
         segments1 = np.concatenate([points1[:-1], points1[1:]], axis=1)
 
-        norm = plt.Normalize(time1.min(), time1.max())
+        #norm = plt.Normalize(time1.min(), time1.max())
         lc1 = LineCollection(segments1, cmap="magma", norm=norm, alpha=0.4)
         lc1.set_array(time1)
         lc1.set_linewidth(2)
@@ -907,7 +926,106 @@ def plotTrajectoryInPhase(ax,
     ax.set_yticks([-1., -.5, 0., .5, 1.])
     ax.set_xlabel(r"$x/\lambda$", fontsize=20)
     ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
+    
 #
+
+def plotSingleTrajInPhase(ax, file="dt=1.0", threshold=20, rand=False, N=5):
+    
+    path=NDSC_assets + "\\" + file + "\\" + "data.txt"
+    metadf, df = loadTrajectoryData(path, must_be_int)
+    metadf, df = prepareData(metadf, df)
+
+    subdf=df[["frame", "time", "cell", "xbis", "v_dot_e1"]].copy()
+    ## separation of sequences
+    subdf = subdf.sort_values(["cell", "frame"])
+    subdf["t_diff"] = subdf.groupby("cell")["frame"].diff()
+    subdf["is_gap"] = (subdf["t_diff"] != 1) | subdf["t_diff"].isna()
+    subdf["sequence_id"] = subdf.groupby("cell")["is_gap"].cumsum()
+    subdf=subdf.drop(["t_diff", "is_gap"], axis=1)
+
+    # remove too short sequences
+    subdf = subdf[subdf.groupby(["cell", "sequence_id"])["cell"].transform("size") >= threshold]
+
+    ## normalize time, each sequence begins at 0
+    pos0=subdf.columns.get_loc("time")
+    subdf.insert(pos0+1, "time_set0", subdf.groupby(["cell", "sequence_id"])["time"].transform(lambda x: x - x.min()))
+    pos0=subdf.columns.get_loc("frame")
+    subdf.insert(pos0+1, "frame_set0", subdf.groupby(["cell", "sequence_id"])["frame"].transform(lambda x: x - x.min()))
+
+    ## normalize time compared to the max Time. Sequences belong to [0, 1] but can be shorter
+    pos0=subdf.columns.get_loc("time_set0")
+    Tmax, Tmin=subdf["time_set0"].max(), subdf["time_set0"].min()
+    subdf.insert(pos0+1, "time_norm", subdf.groupby(["cell", "sequence_id"])["time_set0"].transform(lambda x: (x - Tmin) / (Tmax - Tmin)))
+
+    ## count sequence from 1
+    pos0=subdf.columns.get_loc("sequence_id")
+    Tmax, Tmin=subdf["time_set0"].max(), subdf["time_set0"].min()
+    subdf.insert(pos0+1, "sequence_id0", subdf.groupby(["cell", "sequence_id"])["sequence_id"].transform(lambda x: x-x.min()+1))
+
+
+    # filter cells and sequences index
+    sample_cell_idx=[216, 63, 139, 249, 119, 209, 279, 259, 176]
+    if rand:
+        N=min(N, len(subdf))
+        sample_cell_idx = random.sample(list(subdf["cell"].unique()), N)
+        print(sample_cell_idx)
+    sample_traj=subdf[subdf["cell"].isin(sample_cell_idx)]
+    
+    first_B_per_A = sample_traj.groupby("cell")["sequence_id"].first()
+    sample_traj = sample_traj.merge(first_B_per_A.reset_index(), on=["cell", "sequence_id"])
+
+    # initial condition
+    start=sample_traj.groupby("cell").head(1)
+    ax.scatter(data=start,
+               x="xbis",
+               y="v_dot_e1",
+               marker="d",
+               facecolor="black",
+               alpha=0.7,
+               s=100, 
+               zorder=3, 
+               edgecolors="black", 
+               linewidth=0.5
+               )
+    
+    for idx in sample_traj["cell"].unique():
+        traj = sample_traj[sample_traj["cell"] == idx]
+        x = traj["xbis"].values
+        y = traj["v_dot_e1"].values
+        time = traj["time_set0"].values / 60.
+
+        points = np.array([x, y]).T.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+        norm = plt.Normalize(time.min(), time.max())
+        lc = LineCollection(segments, cmap="magma", norm=norm, alpha=.6)
+        lc.set_array(time)
+        lc.set_linewidth(2)
+
+        if idx !=sample_traj["cell"].unique()[0]:
+            ax.add_collection(lc)
+            ax.autoscale()
+        else:
+            line=ax.add_collection(lc)
+            ax.autoscale()
+            
+            cax = inset_axes(ax, width="5%", height="45%", loc="lower left", borderpad=0.5)
+            norm=plt.Normalize(sample_traj["time_set0"].min(), sample_traj["time_set0"].max())
+            cbar = plt.colorbar(line, cax=cax, orientation="vertical", norm=norm)
+            cbar.set_label(r"Time", fontsize=15)
+            cbar.set_ticks([])
+    #
+    ax.set_xlim(left=0., right=0.5)
+    ax.set_ylim(bottom=-1., top=1.)
+    ax.set_yticks([-1., -.5, 0., .5, 1.])
+    ax.set_xlabel(r"$x/\lambda$", fontsize=20)
+    ax.set_ylabel(r"$\hat{v}\cdot \vec{e}_1$", fontsize=20)
+#
+
+
+
+
+
     
 
 
@@ -922,8 +1040,8 @@ def plotTrajectoryInPhase(ax,
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="test"
-file="where_curvature"
+study="spatial_curv"
+file="q=1.0"
 
 # assets
 root=os.getcwd()
@@ -950,8 +1068,8 @@ celerities = [.7]
 #                                                    Open figure
 # ================================================================================================================
 # ================================================================================================================
-NbLignes, NbColonnes=2, 5
-Largeur, Hauteur = 23, 10
+NbLignes, NbColonnes=2, 4
+Largeur, Hauteur = 20, 10
 Largeur_ins, Hauteur_ins = 2.5, 2.5
 fig1 = plt.figure(num="curvature_traj", figsize=(Largeur, Hauteur), constrained_layout=True)
 gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
@@ -965,28 +1083,28 @@ ax3 = fig1.add_subplot(gs1[0, 2])
 ax4 = fig1.add_subplot(gs1[0, 3])
 ax5 = fig1.add_subplot(gs1[1, 2])
 ax6 = fig1.add_subplot(gs1[1, 3])
-ax7 = fig1.add_subplot(gs1[0, 4])
-ax8 = fig1.add_subplot(gs1[1, 4])
+#ax7 = fig1.add_subplot(gs1[0, 4])
+#ax8 = fig1.add_subplot(gs1[1, 4])
 
 ## add labels
-def add_label(ax, txt, x=-0.05, y=1.1):
+def add_label(ax, txt, x=-0.05, y=1.15):
     ax.text(x, y, txt, transform=ax.transAxes, fontsize=20, fontweight="bold", va="top", ha="right")
 #
 
-add_label(ax1, "A", y=1.04)
-add_label(ax2, "B", y=1.04)
+add_label(ax1, "A", y=1.07)
+add_label(ax2, "B", y=1.07)
 add_label(ax3, "C")
 add_label(ax4, "D")
-add_label(ax5, "F")
-add_label(ax6, "G")
-add_label(ax7, "E")
-add_label(ax8, "H")
+add_label(ax5, "E")
+add_label(ax6, "F")
+#add_label(ax7, "E")
+#add_label(ax8, "H")
 
 
 
 
-show=True
-save=False
+show=False
+save=True
 path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 
 # ================================================================================================================
@@ -1007,7 +1125,7 @@ path_to_save=os.path.join(os.getcwd(), substrate_regime, "curv_analysis.svg")
 
 
 print("--------- open data")
-path=NDSC_assets + "\\" + file + "\\" + "data.txt"
+path=os.path.join(NDSC_assets, file, "data.txt")
 
 # open file
 metadata, data=loadTrajectoryData(path, must_be_int)
@@ -1022,15 +1140,95 @@ print("--------- plot")
 plotCurvatureVsXaxis(metadata, ax=ax3)
 plotTimeAsFollower(data, ax=ax5, report=False)
 plotVsTime(metadata, data_followers, axs=[ax1, ax2], rand=False, N=1)
-plotAlignementCurvaturePhase(data_followers, Nt=1, ax=ax7)
-plotSpeedInPhase(metadata, data_followers, axs=[ax6, ax8])
-plotTrajectoryInPhase(ax4,
-                      file="dt=1.0",
-                      threshold=50,
-                      central_metric="medoid_dba",
-                      interpolate=False,                        ## trajectories are interpolated or not (on a hundred of points)
-                      time_interpolation_method="physical",     ## if interpolated, time is unit (between [0, 1], True) or physical time (False)
-                      rand=True)
+#plotAlignementCurvaturePhase(data_followers, Nt=1, ax=ax7)
+#plotSpeedInPhase(metadata, data_followers, axs=[ax6, ax8])
+#plotTrajectoryInPhase(ax4,
+#                      file="dt=1.0",
+#                      threshold=50,
+#                      central_metric="",                        ## medoid_unit, medoid_dba, mean, median pr empty string
+#                      interpolate=False,                        ## trajectories are interpolated or not (on a hundred of points)
+#                      time_interpolation_method="physical",     ## if interpolated, time is unit (between [0, 1], True) or physical time (False)
+#                      rand=True)
+
+plotSingleTrajInPhase(ax4, file="dt=1.0", rand=False, N=1)
+
+print("--------- q analysis")
+
+def searchFilesToAnalyse(root):
+    paths_to_files = []
+    for root_folder, sub_folder, files in os.walk(root):
+        for file in files:
+            if not re.search("dt", root_folder):
+                paths_to_files.append(os.path.join(root_folder, file))
+    return paths_to_files
+#
+
+files=searchFilesToAnalyse(NDSC_assets)
+Mean, Count, Q, STD=[], [], [], []
+for file in files:
+    # open file
+    metadata, data=loadTrajectoryData(file, must_be_int)
+    
+    # format_data
+    data, data_followers=prepareData(metadata, data)
+
+    # get q value
+    Q.append(float(re.findall(r"q=(\d*\.*\d*)", file)[0]))
+
+    ## pourcentage time spent to follow
+    group=data.groupby("cell")
+    percentage_follower=100.*group["follower"].sum().div(group.size())
+    stats=percentage_follower.describe()
+    Mean.append(stats["mean"])
+    STD.append(stats["std"])
+
+    subdata=data_followers[["frame", "time", "cell", "xbis", "v_dot_e1"]].copy()
+    ## separation of sequences
+    subdata = subdata.sort_values(["cell", "frame"])
+    subdata["t_diff"] = subdata.groupby("cell")["frame"].diff()
+    subdata["is_gap"] = (subdata["t_diff"] != 1) | subdata["t_diff"].isna()
+    subdata["sequence_id"] = subdata.groupby("cell")["is_gap"].cumsum()
+    subdata=subdata.drop(["t_diff", "is_gap"], axis=1)
+
+    # remove too short sequences
+    subdata = subdata[subdata.groupby(["cell", "sequence_id"])["cell"].transform("size") >= 10]
+    Count.append(len(subdata.groupby(["cell", "sequence_id"]).size()))
+
+
+
+color="mediumorchid"
+ax6.plot(Q, Mean, marker="o", color=color)
+m_plus = [Mean[i] + STD[i] for i in range(len(Mean))]
+m_minus = [Mean[i] - STD[i] for i in range(len(Mean))]
+ax6.plot((Q,Q), (m_plus,m_minus),'-',color=color)
+
+ax6.set_ylabel("Average % of time spent \n following the wave", color=color)
+ax6.set_ylim(bottom=0.)
+ax6.tick_params(axis="y", labelcolor=color)
+
+
+ax61=ax6.twinx()
+color="steelblue"
+ax61.plot(Q, Count, marker="o", color=color)
+ax61.set_ylabel("Event count", color=color)
+ax61.set_ylim(bottom=0.)
+ax61.tick_params(axis="y", labelcolor=color)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 if show:

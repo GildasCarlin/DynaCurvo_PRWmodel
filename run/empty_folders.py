@@ -33,10 +33,10 @@ def search_files_to_delete(root):
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+study="DSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
 
 # assets
-path_to_assets=os.path.join(os.getcwd(), substrate_regime, "assets", study)
+path_to_assets=os.path.join("..", "post", substrate_regime, "assets", study)
 
 # wavelengenth   20.0  /  40.0  /  80.0
 ws = [20.0, 40.0, 80.0]   
@@ -47,20 +47,27 @@ ws = [20.0, 40.0, 80.0]
 # ================================================================================================================
 # ================================================================================================================
 
+print("\nDelete simulations data Process")
+print("==========================================================\n")
 
-print("\n------------ list of emptied folders ------------")
 
-print("... root fodler to delete", path_to_assets)
+count=0
+print("root folder", path_to_assets)
 print("with selected conditions:", ws)
 where_is_data = search_files_to_delete(path_to_assets)
 for path in where_is_data:
     if any(re.search(str(pattern), path) for pattern in ws):
         os.remove(path)
+        print("... deletion")
+        count+=1
     #
 #
 
+print("\nnumber of files deleted:", count)
 
 
+print("\nDelete simulations data Process DONE")
+print("==========================================================\n")
 
 
 

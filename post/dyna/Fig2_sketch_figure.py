@@ -236,10 +236,10 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
         ax1.set_ylim(bottom=0., top=1.)
         
 
-    elif quantity=='vd':
+    elif quantity=='speed':
         infos={'y_label1':'Cell speed (µm/s)',
         }
-        ax1.set_ylim(bottom=0., top=4.)
+        ax1.set_ylim(bottom=0., top=3.1)
 
     elif quantity=='r_d':
         infos={'y_label1':r'$r_d$ ',
@@ -253,7 +253,7 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
         infos={'y_label1':r'Cell position at $T$=20min (mm)',
         }
         ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
-        ax1.set_ylim(bottom=-.25, top=1.2)
+        ax1.set_ylim(bottom=-.25, top=0.9)
     #
         
     # plot distributions
@@ -273,7 +273,7 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
     ax1.set_ylabel(infos['y_label1'], fontsize=25)
     ax1.set_xlabel(r'Wave celerity (µm/s)', fontsize=25)
     if plot_legend:
-        ax1.legend(fontsize=30, title='Assumption', title_fontsize=32, loc = 'upper left')
+        ax1.legend(fontsize=30, title='Assumption', title_fontsize=32, loc = "best")
     #
 
     ax1.tick_params(axis='both', which='major', labelsize=20)    
@@ -316,8 +316,8 @@ def format_traj(data, center=False, convert=True):
 
 # study
 substrate_regime="dyna"  # dyna or static
-NDSC_study="NDSC_RightSinus_20min_VariousCelerity"
-DSC_study="DSC_RightSinus_20min_VariousCelerity"
+NDSC_study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+DSC_study="DSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
 # assets
 NDSC_assets=os.path.join(os.getcwd(), substrate_regime, "assets", NDSC_study)
 DSC_assets=os.path.join(os.getcwd(), substrate_regime, "assets", DSC_study)
@@ -332,7 +332,7 @@ wavelength = 20.
 dt = 15.
 
 ## list of wave celerity to plot distributions
-celerities = [.1, .7, .9, 5.]
+celerities = [.1, .4, .6, 2.]
 
 ## list of frames to plot barycenters
 times = [10, 40, 80]
@@ -372,10 +372,10 @@ path_to_save=os.path.join(os.getcwd(), substrate_regime, "traj_analysis.svg")
 
 ### ticks for traj plot
 xticks_NS = [-1., 0., 1.]
-yticks_NS = [-.25, 0., 1.75]
+yticks_NS = [-.25, 0., 1.]
 
 xticks_S = [-1., 0., 1.]
-yticks_S = [-.25, 0., 1.75]
+yticks_S = [-.25, 0., 1.]
 #
 
 ### palettes de couleur
@@ -448,16 +448,16 @@ plot_dist(data=       all_dx,
           quantity=   'dx', 
           ax1=        ax2, 
           palette=    palette_for_assumption,
-          plot_legend=False
+          plot_legend=True
           )
 
 print('---------------------- plot vd')
 plot_dist(data=       all_vd, 
-          quantity=   'vd', 
+          quantity=   'speed', 
           ax1=        ax3, 
           palette=    palette_for_assumption,
-          whis=       5.,
-          plot_legend=True
+          whis=       3.,
+          plot_legend=False
           )
 
 print('---------------------- plot r_d')
@@ -531,10 +531,10 @@ for celerity in celerities:
            )
 #
 
-add_stat(ax1, eff_size={'ES':r'$A_w$', 'values':[0.23, 0.07, 0.08, 0.43]}, y=[.59]+3*[.955], sign=3*["**"]+["*"])                   # Cohen's d=[1.4, 2., 47., 10.]
-add_stat(ax2, eff_size={'ES':r'$A_w$', 'values':[0.40, 0.83, 0.89, 0.51]}, sign=3*["**"]+["NS"])                                     # Cohen's d=[0.6, 1.2, 14., 5.2]
-add_stat(ax3, eff_size={'ES':r'$A_w$', 'values':[0.51, 0.36, 0.31, 0.5]}, y=[.59]+3*[.955], sign=3*["**"]+["NS"])                   # Cohen's d=[0.04, 0.26, 3.1, 0.8]
-add_stat(ax4, eff_size={'ES':r'$A_w$', 'values':[0.23, 0.07, 0.08, 0.43]}, sign=3*["**"]+["*"])                                     # Cohen's d=[1.4, 2., 47., 10.]
+add_stat(ax1, eff_size={'ES':r'$A_w$', 'values':[0.33, 0.3, 0.1, 0.36]}, y=[.59]+3*[.955])                   # Cohen's d=[1.4, 2., 47., 10.]
+add_stat(ax2, eff_size={'ES':r'$A_w$', 'values':[0.47, 0.38, 0.37, 0.46]}, sign=["NS"]+2*["**"]+["NS"])                                     # Cohen's d=[0.6, 1.2, 14., 5.2]
+add_stat(ax3, eff_size={'ES':r'$A_w$', 'values':[0.48, 0.46, 0.48, 0.5]}, sign=3*["**"]+["NS"])                   # Cohen's d=[0.04, 0.26, 3.1, 0.8]
+add_stat(ax4, eff_size={'ES':r'$A_w$', 'values':[0.33, 0.3, 0.1, 0.36]})                                  # Cohen's d=[1.4, 2., 47., 10.]
 
 
 if save:

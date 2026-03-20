@@ -20,14 +20,19 @@ import regex as re
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+study="DSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+
+# conditions in the study
+Lambdas=[80.0, 40.0, 20.0]
+celerity_range=[0., 4.]
+c_step=.1
 
 # exported file (at the end of the simulation)
 home=os.path.expanduser("~")
 path_to_export=os.path.join(home, "Downloads", "data.txt")
 
 # model version + path to template param_user.js
-path_to_model = os.path.join("model") 
+path_to_model = os.path.join("model")
 path_to_UI = os.path.join("..", "model", "param_user.js")
 
 # assets
@@ -37,7 +42,7 @@ path_to_assets=os.path.join("..", "post", substrate_regime, "assets", study)
 ## ------------------------------------ simulations parameters
 
 # assumptions:    cells are sensitive to curvature (K_assumption) ? cells are sensitive to the wave (W_assumption) ? 
-W_assumption = r"false"
+W_assumption = r"true"
 K_assumption = r"true"
 
 # substrate pattern:   right_sinus  /  convr_sinus  /   wells_sinus  /  snake_sinus
@@ -53,6 +58,7 @@ simu_length=1200.0  # seconds
 sampling_rate=15.0
 
 # others
+nbCell=300
 export_data=r"true"
 draw_cells=r"false"
 
@@ -63,9 +69,20 @@ draw_cells=r"false"
 # ================================================================================================================
 # ================================================================================================================
 
+def createFolders(root, Wavelengths, Celerities, step):
+    for wavelength in Wavelengths:
+        celerity=min(Celerities)
+        while celerity <= max(Celerities):
+            path=os.path.join(root, "L="+str(round(wavelength, 1)), "c="+str(round(celerity, 2)))
+            if not os.path.exists(path):
+                os.makedirs(path)
+            celerity+=step
+        #
+    #
+#
+
 def searchFilesToAnalyse(root):
     paths_to_files = []
-
     for root_folder, sub_folder, files in os.walk(root):
         if re.search('c=', root_folder) and not ('data.csv' in files or 'data.txt' in files):
             paths_to_files.append(os.path.join(root_folder))
@@ -90,6 +107,7 @@ def prepareUI():
     temp_content = re.sub(r"let\sw\s*=\s*(\d*\.?\d*);", r'let w='+str(angular_velocity)+r';', temp_content)
     temp_content = re.sub(r"let\spsi0\s*=\s*(\d*\.?\d*);", r'let psi0='+initial_angle+r';', temp_content)
 
+    temp_content = re.sub(r"let\snbCell\s*=\s*(\d*\.?\d*);", r'let nbCell='+str(nbCell)+r';', temp_content)
     temp_content = re.sub(r"let\sTmax\s*=\s*(\d*\.?\d*);", r'let Tmax='+str(simu_length)+r';', temp_content)
     temp_content = re.sub(r"let\sdt_mesure\s*=\s*(\d*\.?\d*);", r'let dt_mesure='+str(sampling_rate)+r';', temp_content)
     temp_content = re.sub(r'let\sdata\s*=\s*(true|false);', r'let data='+export_data+r';', temp_content) 
@@ -129,6 +147,8 @@ def editUI(wl, c):
 print("\nLaunch Multiple Simulations Process")
 print("==========================================================\n")
 print("substrate regime: " + substrate_regime + "\nstudy: " + study)
+
+createFolders(path_to_assets, Lambdas, celerity_range, c_step)
 
 path_to_simu = searchFilesToAnalyse(path_to_assets)
 total_number_of_simu=len(path_to_simu)

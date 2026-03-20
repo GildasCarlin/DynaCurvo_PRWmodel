@@ -81,10 +81,10 @@ plt.rcParams.update({'font.size': 50})
 
 # study
 substrate_regime="dyna"  # dyna or static
-NDSC_study="NDSC_RightSinus_20min_VariousCelerity"
-DSC_study="DSC_RightSinus_20min_VariousCelerity"
-csat_study="DSC_looking_for_csat"
-csat_nonoise_study="DSC_looking_for_csat_NONOISE"
+NDSC_study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+DSC_study="DSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+csat_study="DSC_lookingForCsat_fstat=0_q=0"
+csat_nonoise_study="DSC_lookingForCsat_fstat=0_q=0_noise=0"
 csat_taudyna_study="DSC_looking_for_csat_tau_dyna_div_par10"
 
 
@@ -136,9 +136,9 @@ def formatData(df_last, df_dx, df_vd, wavelengths=[20., 40., 80.], max_celerity=
     df_dx.dropna(inplace=True)
     df_dx[['dx.mean', 'dx.med', 'dx.std']]=df_dx[['dx.mean', 'dx.med', 'dx.std']].astype("float")
 
-    df_vd.rename(columns={"vd":"vd.mean",
-                            "vd.1":"vd.med",
-                            "vd.2":"vd.std"}, inplace=True)
+    df_vd.rename(columns={"speed":"vd.mean",
+                            "speed.1":"vd.med",
+                            "speed.2":"vd.std"}, inplace=True)
     df_vd.dropna(inplace=True)
     df_vd[['vd.mean', 'vd.med', 'vd.std']]=df_vd[['vd.mean', 'vd.med', 'vd.std']].astype("float")
 
@@ -190,12 +190,13 @@ def plotCentralStat(ass,
                     plot_sdyna=False, 
                     x_sdyna=4., 
                     n=3., 
+                    zorder=10,
                     remove_ylabel=False):
     
     ##### specific option to plot depending on the statistic
     if quantity=='dx':
         infos={'y_label':r'$\overline{D}_{\perp}$'}
-        ax.axhline(y=.5, linewidth = 2, color='#8C0335', linestyle='--')
+        ax.axhline(y=.5, linewidth = 2, color='#8C0335', linestyle='--', zorder=1)
         ax.set_ylim(bottom=0., top=1.)
     #
     if quantity=='vd':
@@ -204,8 +205,8 @@ def plotCentralStat(ass,
     #
     if quantity=='rd':
         infos={'y_label':r'$\overline{r}_d$'}
-        ax.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
-        ax.set_ylim(top=1., bottom=-0.1)
+        ax.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--', zorder=1)
+        ax.set_ylim(top=1., bottom=-0.15)
     #
     if quantity=="b":
         infos={'y_label':r"$B_T$ with $T$=20min (mm)"}
@@ -275,7 +276,7 @@ def plotCritical(data,
                  th=(False, .79, 'th')):
     
     #marker={'last_y.mean':'^', 'dx.mean':'o', 'vd.mean':'s'}
-    ylabel={"celerity":"Critical wave celerity (µm/s)", 'vd.mean':r"Maximum $\overline{v}$ (µm/s)"}
+    ylabel={"celerity":"Critical wave celerity (µm/s)", 'vd.mean':r"Maximum $\overline{v}$ (µm/s)", 'last_y.mean':r"Maximum $\overline{v}$ (µm/s)"}
     
     ## plot theoretical expression
     if th[0]:
@@ -336,13 +337,11 @@ def plotCritical(data,
         point1 = Line2D([0], [0], label=th[2], markersize=10, linestyle='--', color='black', linewidth=3.)
         point2 = Line2D([0], [0], label="DSCcells", markersize=10, marker='s', color='black', ms=15, linestyle="")
         point3 = Line2D([0], [0], label="DSCcells,\n"+r"$\bf f_{stat}=0$", markersize=10, marker='o', color='black', ms=15, linestyle="")
-        point4 = Line2D([0], [0], label="DSCcells,\n"+r"$\bf f_{stat}=0$, $\bf \sigma=0$", markersize=10, marker='d', color='black', ms=15, linestyle="")
-        ax.legend(handles=[point1, point2, point3, point4], fontsize=20, loc="upper left")
+        #point4 = Line2D([0], [0], label="DSCcells,\n"+r"$\bf f_{stat}=0$, $\bf \sigma=0$", markersize=10, marker='d', color='black', ms=15, linestyle="")
+        ax.legend(handles=[point1, point2, point3], fontsize=20, loc="upper left")
         ax.tick_params(axis='both', which='major', labelsize=20)
     #
 #
-
-
 
 
 
@@ -410,17 +409,18 @@ for assumption in assumptions:
                  )
 #
 
-## plot critical wave celerity when curvature assumption is active and q=1 
+## plot critical wave celerity, f_stat!=0 and q=1 
 df_c_last = pd.concat(list_c_last, ignore_index=True)
 df_c_dx =   pd.concat(list_c_dx, ignore_index=True)
 df_c_vd =   pd.concat(list_c_vd, ignore_index=True)
 df_c_last = df_c_last.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
 df_c_dx = df_c_dx.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
 df_c_vd = df_c_vd.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
-plotCritical(df_c_vd, y='celerity', marker="s", ax=ax4, plot_legend=True, alpha=1., th=(True, 2.**(-1./3.), r'$w_{sat}$'))
-plotCritical(df_c_vd, y='vd.mean', marker="s", ax=ax8, plot_legend=True, alpha=1., th=(True, 2.**(2./3.)/3., r'$\max_c (s_{dyna})$'))
+print(df_c_last)
+plotCritical(df_c_last, y='celerity', marker="s", ax=ax4, plot_legend=True, alpha=1., th=(True, 2.**(-1./3.), r'$w_{sat}$'))
+plotCritical(df_c_last, y='last_y.mean', marker="s", ax=ax8, plot_legend=True, alpha=1., th=(True, 2.**(2./3.)/3., r'$\max_c (s_{dyna})$'))
 
-### plot critical wave celerity when curvature assumption is deactivated and q=0
+### plot critical wave celerity, f_stat=0, tau_dyna/10, q=0
 data_last = pd.read_csv(csat_assets + '\\' + 'central_last.csv')
 data_dx =   pd.read_csv(csat_assets + '\\' + 'central_dx.csv')
 data_vd =   pd.read_csv(csat_assets + '\\' + 'central_vd.csv')
@@ -439,11 +439,12 @@ df_c_vd =   pd.concat(list_c_vd, ignore_index=True)
 df_c_last = df_c_last.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
 df_c_dx = df_c_dx.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
 df_c_vd = df_c_vd.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
-plotCritical(df_c_vd, y='celerity', ax=ax4, plot_legend=False, alpha=1., th=(False, 0., ""))
-plotCritical(df_c_vd, y='vd.mean', ax=ax8, plot_legend=False, alpha=1., th=(False, 0., ""))
+plotCritical(df_c_last, y='celerity', ax=ax4, plot_legend=False, alpha=1., th=(False, 0., ""))
+plotCritical(df_c_last, y='last_y.mean', ax=ax8, plot_legend=False, alpha=1., th=(False, 0., ""))
 
+"""
 # ce n'est pas le noise qui explique le décalage
-### plot critical wave celerity when curvature assumption is deactivated and q=0 and no noise and tau_dyna/10
+### plot critical wave celerity, f_stat=0, q=0 and tau_dyna/10 and no noise
 data_last = pd.read_csv(csat_nonoise_assets + '\\' + 'central_last.csv')
 data_dx =   pd.read_csv(csat_nonoise_assets + '\\' + 'central_dx.csv')
 data_vd =   pd.read_csv(csat_nonoise_assets + '\\' + 'central_vd.csv')
@@ -462,8 +463,9 @@ df_c_vd =   pd.concat(list_c_vd, ignore_index=True)
 df_c_last = df_c_last.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
 df_c_dx = df_c_dx.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
 df_c_vd = df_c_vd.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
-plotCritical(df_c_vd, y='celerity', marker="d", ax=ax4, plot_legend=False, alpha=1., th=(False, 0., ""))
-plotCritical(df_c_vd, y='vd.mean', marker="d", ax=ax8, plot_legend=False, alpha=1., th=(False, 0., ""))
+plotCritical(df_c_last, y='celerity', marker="d", ax=ax4, plot_legend=False, alpha=1., th=(False, 0., ""))
+plotCritical(df_c_last, y='last_y.mean', marker="d", ax=ax8, plot_legend=False, alpha=1., th=(False, 0., ""))
+"""
 
 ############# plot critical wave celerity when curvature assumption is deactivated and q=0 and tau_dyna / 2
 ####data_last = pd.read_csv(csat_taudyna_assets + '\\' + 'central_last.csv')

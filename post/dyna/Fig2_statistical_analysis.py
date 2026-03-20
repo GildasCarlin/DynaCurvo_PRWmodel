@@ -35,13 +35,13 @@ def checkNormality(quantity, getNorm=False, getBeta=False, getNPKS=False, showFi
 
     histo_title = {'dx':r'$D_{\perp}$', 
                    'last_y':'Cell position at $T$=20 min (mm)',
-                   'vd':'Velocity (µm/s)'}
+                   'speed':'Velocity (µm/s)'}
 
     if quantity in ['last_y', 'r_d']:
         data_to_test = all_last.copy()
     elif quantity == 'dx':
         data_to_test = all_dx.copy()
-    elif quantity == 'vd':
+    elif quantity == 'speed':
         data_to_test = all_vd.copy()
     #
 
@@ -131,7 +131,7 @@ def checkNormality(quantity, getNorm=False, getBeta=False, getNPKS=False, showFi
                 ax1.legend(handles=[mpatch1, mpatch2], fontsize=15, loc="upper left")
             #
 
-            if quantity=='vd' and celerity==.1:
+            if quantity=='speed' and celerity==.1:
                 mpatch = mpatches.Patch(facecolor='#DA0176', label=r'Non-parametric dist.', edgecolor='black')
                 ax1.legend(handles=[mpatch], fontsize=15, loc="upper right")
             #
@@ -164,7 +164,7 @@ def checkCelerityEffect(quantity, assumption):
         data_to_test = all_last.copy()
     elif dependant_variable == 'dx':
         data_to_test = all_dx.copy()
-    elif dependant_variable == 'vd':
+    elif dependant_variable == 'speed':
         data_to_test = all_vd.copy()
 
     data_to_test = data_to_test[data_to_test['assumption']==assumption]
@@ -223,7 +223,7 @@ def checkCelerityEffect(quantity, assumption):
         data_to_test = all_last.copy()
     elif dependant_variable == 'dx':
         data_to_test = all_dx.copy()
-    elif dependant_variable == 'vd':
+    elif dependant_variable == 'speed':
         data_to_test = all_vd.copy()
     
     data_to_test = data_to_test[data_to_test['assumption']==assumption]
@@ -262,7 +262,7 @@ def checkAssumptionEffect(quantity):
         data_to_test = all_last.copy()
     elif dependant_variable == 'dx':
         data_to_test = all_dx.copy()
-    elif dependant_variable == 'vd':
+    elif dependant_variable == 'speed':
         data_to_test = all_vd.copy()
 
     #print(data_to_test[[factor, dependant_variable]].groupby(factor).mean())
@@ -342,8 +342,8 @@ def cles_safe(x, y):
 
 # study
 substrate_regime="dyna"  # dyna or static
-NDSC_study="NDSC_RightSinus_20min_VariousCelerity"
-DSC_study="DSC_RightSinus_20min_VariousCelerity"
+NDSC_study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+DSC_study="DSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
 # assets
 root=os.getcwd()
 NDSC_assets=os.path.join(root, substrate_regime, "assets", NDSC_study)
@@ -356,7 +356,7 @@ mapping_path_assumption={"NDSC":NDSC_assets, "DSC":DSC_assets}
 wavelength = 20.
 
 ## list of wave celerity to plot distributions
-celerities = [0., .1, .7, .9, 5.]
+celerities = [0., .1, .4, .6, 2.]
 
 # what to do
 normality=False
@@ -364,7 +364,7 @@ celerity_effect=True
 assumption_effect=False
 
 # what to test
-quantity="last_y"
+quantity="dx"  # dx, last_y, speed, r_d
 nature="NDSC"
 
 # ================================================================================================================
