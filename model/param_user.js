@@ -46,18 +46,18 @@
 //                               -- wave celerity c>=0 (µm/s)
 //                               -- initial phase phi0 (unitless) (commun for the two directions)
 
-let surface_title='right_sinus';
+let surface_title='convr_sinus';
 
 let a=10.0;
 let lambda=20.0;
 let c=0.4;
 let phi0=0.0;
 
-let w=0.0;
-let psi0=-Math.PI/2.0;//-Math.PI/2.0;//Math.PI/4.0;
-let angleParams=[]; //[[Math.PI/4.0, w, 60.0]]; 
-let as = 1.25;
-let lambdas=60.0;
+let w=0.01;
+let psi0=5.0;//-Math.PI/2.0; ;//50.0;// //-Math.PI/2.0;//Math.PI/4.0;
+let angleParams=[];     //[[Math.PI/4.0, w, 60.0]];
+let as = 1.25; 
+let lambdas=40.0;
 
 
 
@@ -93,12 +93,12 @@ let data=true;
 let file_name_data = 'data';
 
 // draw 
-let draw_cells=false;
+let draw_cells=true;
 let draw_traj = false;   // deprecated if nbCell>5
 
 // record screenshot video
 let screen = false;
-let captureLength = 8000;  // number of frames recorded 8000=20min
+let captureLength = 100;  // number of frames recorded 8000=20min
 
 
 

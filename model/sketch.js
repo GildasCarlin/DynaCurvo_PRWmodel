@@ -286,37 +286,39 @@ function draw(){
     }
   }
 
-  //let X=[30.0];
-  //let Y=[0.0];
-  //for (const x of X){
-  //  for (const y of Y){
-  //    let posiF=createVector(x, y);
-  //    let H=meanCurvature(posiF, timer_sec, angleParams);
-  //    let K=gaussianCurvature(posiF, timer_sec, angleParams);
+//  let X=[100.0, 20.0];
+//  let Y=[0.0];
+//  console.log("-------------------");
+//  for (const x of X){
+//    for (const y of Y){
+//      let posiF=createVector(x, y);
+//      let H=meanCurvature(posiF, timer_sec, angleParams);
+//      let K=gaussianCurvature(posiF, timer_sec, angleParams);
 //
-  //    push();
-  //    fill('black');
-  //    stroke(0);
-  //    translate(x, y);
-  //    ellipse(0, 0, 2.0, 2.0);
-  //    pop();
+//      push();
+//      fill('black');
+//      stroke(0);
+//      translate(x, y);
+//      ellipse(0, 0, 2.0, 2.0);
+//      pop();
 //
-  //    let [gradf, gradpf]=gradCurvature(posiF, timer_sec, angleParams);
-  //    let gradGf=gradGaussianCurvature(posiF, timer_sec, angleParams);
-  //    drawVector(x, y, gradf.copy().mult(15000), 'red');
-  //    //drawVector(x, y, gradGf.copy().mult(700000), 'green');
+//      let [gradf, gradpf]=gradCurvature(posiF, timer_sec, angleParams);
+//      let gradGf=gradGaussianCurvature(posiF, timer_sec, angleParams);
+//      drawVector(x, y, gradf.copy().mult(15000), 'red');
+//      //drawVector(x, y, gradGf.copy().mult(700000), 'green');
 //
-  //    let [k1, k2, v1, v2]=PrincipalCurvature(posiF, timer_sec, angleParams);
-  //    let [kxx, kyy, kxy] = curvatureTensor(posiF, timer_sec, angleParams)
-  //    console.log("-------- -----------");
-  //    //console.log("H, K=", (H**2.0).toFixed(5), K.toFixed(5));
-  //    console.log("kxx, kyy, kxy", kxx.toFixed(5), kyy.toFixed(5), kxy.toFixed(5))
-  //    console.log("k1=", k1.toFixed(5));
-  //    console.log("k2=", k2.toFixed(5));
-  //    //drawVector(x, y, v1.copy().mult(25), 'red');
-  //    //drawVector(x, y, v2.copy().mult(20), 'green');
-  //  }
-  //}
+//      let [k1, k2, v1, v2]=PrincipalCurvature(posiF, timer_sec, angleParams);
+//      let [kxx, kyy, kxy] = curvatureTensor(posiF, timer_sec, angleParams)
+//      
+//      console.log("height=", substrate(posiF, timer_sec, angleParams).toFixed(5));
+//      //console.log("H, K=", (H**2.0).toFixed(5), K.toFixed(5));
+//      //console.log("kxx, kyy, kxy", kxx.toFixed(5), kyy.toFixed(5), kxy.toFixed(5))
+//      //console.log("k1=", k1.toFixed(5));
+//      //console.log("k2=", k2.toFixed(5));
+//      //drawVector(x, y, v1.copy().mult(25), 'red');
+//      //drawVector(x, y, v2.copy().mult(20), 'green');
+//    }
+//  }
 
   //let xm=-200.0;//+Math.cos(psi0)*c*timer_sec;  //x*Math.sin(psi) + y*Math.cos(psi)
   //let ym=0.0-c*timer_sec;

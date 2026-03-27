@@ -360,12 +360,12 @@ celerities = [0., .1, .4, .6, 2.]
 
 # what to do
 normality=False
-celerity_effect=True
-assumption_effect=False
+celerity_effect=False
+assumption_effect=True
 
 # what to test
 quantity="dx"  # dx, last_y, speed, r_d
-nature="NDSC"
+nature="DSC"
 
 # ================================================================================================================
 # ================================================================================================================

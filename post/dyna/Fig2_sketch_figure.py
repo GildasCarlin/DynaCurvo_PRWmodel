@@ -233,7 +233,7 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
         ## dx=0.5 ==> no bias
         ax1.axhline(y=.5, linewidth = 2, color='#8C0335', linestyle='--')
         ## dx belongs to [0, 1]
-        ax1.set_ylim(bottom=0., top=1.)
+        ax1.set_ylim(bottom=0., top=1.07)
         
 
     elif quantity=='speed':
@@ -247,13 +247,13 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
         ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
         ax1.axhline(y=1., linewidth = 2, color='#8C0335', linestyle='--')
         #ax1.margins(y=.2)
-        ax1.set_ylim(bottom=-1.6, top=1.5)
+        ax1.set_ylim(bottom=-1.2, top=1.7)
     
     elif quantity=='last_y':
         infos={'y_label1':r'Cell position at $T$=20min (mm)',
         }
         ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
-        ax1.set_ylim(bottom=-.25, top=0.9)
+        ax1.set_ylim(bottom=-.2, top=0.83)
     #
         
     # plot distributions
@@ -279,7 +279,7 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
     ax1.tick_params(axis='both', which='major', labelsize=20)    
 #
 
-def add_stat(ax, eff_size, sign=4*['**'], x=[.12, .37, .62, .87], y=4*[.955], size=0.1):
+def add_stat(ax, eff_size, sign=5*['**'], x=[.1, .3, .5, .7, .9], y=5*[.955], size=0.1):
     for i in range(len(sign)):
         ax.text(x=x[i], y=y[i], s=sign[i] + "\n" + eff_size['ES'] + r"=" + str(eff_size['values'][i]), transform=ax.transAxes, fontsize=15, fontweight='bold', va='center', ha='center')
         
@@ -332,38 +332,38 @@ wavelength = 20.
 dt = 15.
 
 ## list of wave celerity to plot distributions
-celerities = [.1, .4, .6, 2.]
+celerities = [0., .1, .4, .6, 2.]
 
 ## list of frames to plot barycenters
 times = [10, 40, 80]
 
 # mapping between simulation parameters and ax to plot traj
 ax_mapping_traj_NS = {
-    (wavelength, celerities[0]): ax_traj1,
-    (wavelength, celerities[1]): ax_traj2,
-    (wavelength, celerities[2]): ax_traj3,
-    (wavelength, celerities[3]):ax_traj4
+    (wavelength, celerities[1]): ax_traj1,
+    (wavelength, celerities[2]): ax_traj2,
+    (wavelength, celerities[3]): ax_traj3,
+    (wavelength, celerities[4]):ax_traj4
 }
 
 ax_mapping_traj_S = {
-    (wavelength, celerities[0]): ax_traj5,
-    (wavelength, celerities[1]): ax_traj6,
-    (wavelength, celerities[2]): ax_traj7,
-    (wavelength, celerities[3]):ax_traj8
+    (wavelength, celerities[1]): ax_traj5,
+    (wavelength, celerities[2]): ax_traj6,
+    (wavelength, celerities[3]): ax_traj7,
+    (wavelength, celerities[4]):ax_traj8
 }
 
 ax_mapping_baryc_NS = {
-    (wavelength, celerities[0]): (ax_ins1, True),
-    (wavelength, celerities[1]): (ax_ins2, False),
-    (wavelength, celerities[2]): (ax_ins3, False),
-    (wavelength, celerities[3]):(ax_ins4, False)
+    (wavelength, celerities[1]): (ax_ins1, True),
+    (wavelength, celerities[2]): (ax_ins2, False),
+    (wavelength, celerities[3]): (ax_ins3, False),
+    (wavelength, celerities[4]):(ax_ins4, False)
 }
 
 ax_mapping_baryc_S = {
-    (wavelength, celerities[0]): (ax_ins5, True),
-    (wavelength, celerities[1]): (ax_ins6, False),
-    (wavelength, celerities[2]): (ax_ins7, False),
-    (wavelength, celerities[3]):(ax_ins8, False)
+    (wavelength, celerities[1]): (ax_ins5, True),
+    (wavelength, celerities[2]): (ax_ins6, False),
+    (wavelength, celerities[3]): (ax_ins7, False),
+    (wavelength, celerities[4]):(ax_ins8, False)
 }
 
 # export figure or not
@@ -461,6 +461,8 @@ plot_dist(data=       all_vd,
           )
 
 print('---------------------- plot r_d')
+# rd is not defined for c=0µm/s so it is removed
+all_last = all_last[all_last['celerity'].isin(celerities[1:])]
 plot_dist(data=       all_last, 
           quantity=   'r_d',  
           ax1=        ax4, 
@@ -471,7 +473,7 @@ plot_dist(data=       all_last,
 
 
 print('\n------------------------------------ loop over celerities')
-for celerity in celerities:
+for celerity in celerities[1:]:
     metadata = [wavelength, celerity, dt]
 
     print('\n---------------------- get traj for c =',str(celerity), 'µm/s')
@@ -531,10 +533,10 @@ for celerity in celerities:
            )
 #
 
-add_stat(ax1, eff_size={'ES':r'$A_w$', 'values':[0.33, 0.3, 0.1, 0.36]}, y=[.59]+3*[.955])                   # Cohen's d=[1.4, 2., 47., 10.]
-add_stat(ax2, eff_size={'ES':r'$A_w$', 'values':[0.47, 0.38, 0.37, 0.46]}, sign=["NS"]+2*["**"]+["NS"])                                     # Cohen's d=[0.6, 1.2, 14., 5.2]
-add_stat(ax3, eff_size={'ES':r'$A_w$', 'values':[0.48, 0.46, 0.48, 0.5]}, sign=3*["**"]+["NS"])                   # Cohen's d=[0.04, 0.26, 3.1, 0.8]
-add_stat(ax4, eff_size={'ES':r'$A_w$', 'values':[0.33, 0.3, 0.1, 0.36]})                                  # Cohen's d=[1.4, 2., 47., 10.]
+add_stat(ax1, eff_size={'ES':r'$A_w$', 'values':[0.48, 0.31, 0.3, 0.1, 0.36]}, sign=["NS"]+4*["**"], y=2*[.59]+3*[.955])                   # Cohen's d=[1.4, 2., 47., 10.]
+add_stat(ax2, eff_size={'ES':r'$A_w$', 'values':[0.48, 0.49, 0.38, 0.37, 0.46]}, sign=2*["NS"]+2*["**"]+["NS"])                                     # Cohen's d=[0.6, 1.2, 14., 5.2]
+add_stat(ax3, eff_size={'ES':r'$A_w$', 'values':[0.5, 0.5, 0.46, 0.48, 0.5]}, sign=2*["NS"]+2*["**"]+["NS"])                   # Cohen's d=[0.04, 0.26, 3.1, 0.8]
+add_stat(ax4, eff_size={'ES':r'$A_w$', 'values':[0.31, 0.3, 0.1, 0.36]}, sign=4*["**"], x=[.12, .37, .62, .87], y=4*[.955])                                  # Cohen's d=[1.4, 2., 47., 10.]
 
 
 if save:

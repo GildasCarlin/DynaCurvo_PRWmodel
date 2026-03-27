@@ -159,7 +159,7 @@ def computeCellVelocity(df, dt=15., check_unity=False, report=False):
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="DSC_lookingForCsat_fstat=0_q=0_noise=0"
+study=os.path.join("Other_surfaces", "c=0.0")
 
 # assets
 path_to_assets=os.path.join(os.getcwd(), substrate_regime, "assets", study)

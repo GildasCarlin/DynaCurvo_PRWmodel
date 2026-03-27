@@ -127,7 +127,7 @@ def formatData(df_last, df_dx, df_vd, wavelengths=[20., 40., 80.], max_celerity=
                               "r_d":"rd.mean",
                               "r_d.1":"rd.med",
                               "r_d.2":"rd.std"}, inplace=True)
-    df_last.dropna(inplace=True)
+    df_last.drop(0, axis=0, inplace=True)
     df_last[['last_y.mean','last_y.med', 'last_y.std', 'rd.mean', 'rd.med', 'rd.std']]=df_last[['last_y.mean', 'last_y.med', 'last_y.std', 'rd.mean', 'rd.med', 'rd.std']].astype("float")
     
     df_dx.rename(columns={"dx":"dx.mean",
@@ -206,11 +206,11 @@ def plotCentralStat(ass,
     if quantity=='rd':
         infos={'y_label':r'$\overline{r}_d$'}
         ax.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--', zorder=1)
-        ax.set_ylim(top=1., bottom=-0.15)
+        ax.set_ylim(top=1., bottom=-0.32)
     #
     if quantity=="b":
         infos={'y_label':r"$B_T$ with $T$=20min (mm)"}
-        ax.set_ylim(bottom=-.1, top=.9)
+        ax.set_ylim(bottom=-.05, top=.6)
         ax.text(-.25, .5, 
                 ass+r" cells", 
                 rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center', transform=ax.transAxes
@@ -240,6 +240,7 @@ def plotCentralStat(ass,
                     hue='wavelength',
                     ax=ax,
                     palette=palette,
+                    edgecolor=None,
                     legend=plot_legend,
                     s=150
                     )
@@ -327,8 +328,8 @@ def plotCritical(data,
     #
     ## axis
     ax.tick_params(axis='both', which='major', labelsize=20)
-    ax.set_xlabel("$V_{max}$ (µm/s)", fontsize=25)
-    ax.set_ylabel(ylabel[y], fontsize=25)
+    ax.set_xlabel(r"$\overline{v}_{\lambda}$ (µm/s)", fontsize=25)
+    ax.set_ylabel(r"Maximum $\overline{v}$ (µm/s)", fontsize=25)
     ax.set_xticks(xticks)
 
     ## legend

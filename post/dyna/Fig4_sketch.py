@@ -339,7 +339,7 @@ def plotTimeAsFollower(df, ax, report=False):
                   zorder=1)
     #
 
-    ax.axvline(x=stats["50%"], linewidth=4, color="mediumorchid", zorder=2)
+    ax.axvline(x=stats["mean"], linewidth=4, color="mediumorchid", zorder=2)
 
     ax.set_xlim(left=0., right=100.)
     ax.set_xticks([0., 25., 50., 75., 100.])
@@ -1138,7 +1138,7 @@ data, data_followers=prepareData(metadata, data)
 print("--------- plot")
 
 plotCurvatureVsXaxis(metadata, ax=ax3)
-plotTimeAsFollower(data, ax=ax5, report=False)
+plotTimeAsFollower(data, ax=ax5, report=True)
 plotVsTime(metadata, data_followers, axs=[ax1, ax2], rand=False, N=1)
 #plotAlignementCurvaturePhase(data_followers, Nt=1, ax=ax7)
 #plotSpeedInPhase(metadata, data_followers, axs=[ax6, ax8])
@@ -1205,7 +1205,7 @@ ax6.plot((Q,Q), (m_plus,m_minus),'-',color=color)
 ax6.set_ylabel("Average % of time spent \n following the wave", color=color)
 ax6.set_ylim(bottom=0.)
 ax6.tick_params(axis="y", labelcolor=color)
-
+ax6.set_xlabel(r"$q (µm^2/s)$")
 
 ax61=ax6.twinx()
 color="steelblue"
