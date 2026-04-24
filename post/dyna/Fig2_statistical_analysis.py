@@ -164,7 +164,7 @@ def checkCelerityEffect(quantity, assumption):
         data_to_test = all_last.copy()
     elif dependant_variable == 'dx':
         data_to_test = all_dx.copy()
-    elif dependant_variable == 'speed':
+    elif dependant_variable in ['speed', 'speedCorr']:
         data_to_test = all_vd.copy()
 
     data_to_test = data_to_test[data_to_test['assumption']==assumption]
@@ -262,7 +262,7 @@ def checkAssumptionEffect(quantity):
         data_to_test = all_last.copy()
     elif dependant_variable == 'dx':
         data_to_test = all_dx.copy()
-    elif dependant_variable == 'speed':
+    elif dependant_variable in ['speed', 'speedCorr']:
         data_to_test = all_vd.copy()
 
     #print(data_to_test[[factor, dependant_variable]].groupby(factor).mean())
@@ -306,7 +306,7 @@ def checkAssumptionEffect(quantity):
         print('... Welch t test', stats.ttest_ind(data1, data2, equal_var=False))
         print("... Cohen's d =", pg.compute_effsize(data1, data2, eftype = 'cohen'))
         print('... Mann-Whitney U test', stats.mannwhitneyu(data1, data2))
-        print("... CLM effect size =", pg.compute_effsize(data1, data2, eftype = 'CLES'))
+        print("... CLM effect size =", cles_safe(data1, data2))
     #
 #
 
@@ -344,10 +344,14 @@ def cles_safe(x, y):
 substrate_regime="dyna"  # dyna or static
 NDSC_study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
 DSC_study="DSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+DSC_speed="DSC_SpeedDistribution"
+NDSC_speed="NDSC_SpeedDistribution"
 # assets
 root=os.getcwd()
 NDSC_assets=os.path.join(root, substrate_regime, "assets", NDSC_study)
 DSC_assets=os.path.join(root, substrate_regime, "assets", DSC_study)
+DSC_speed_assets=os.path.join(root, substrate_regime, "assets", DSC_speed)
+NDSC_speed_assets=os.path.join(root, substrate_regime, "assets", NDSC_speed)
 
 assumptions=['NDSC', 'DSC']
 mapping_path_assumption={"NDSC":NDSC_assets, "DSC":DSC_assets}
@@ -360,11 +364,11 @@ celerities = [0., .1, .4, .6, 2.]
 
 # what to do
 normality=False
-celerity_effect=False
-assumption_effect=True
+celerity_effect=True
+assumption_effect=False
 
 # what to test
-quantity="dx"  # dx, last_y, speed, r_d
+quantity="speedCorr"  # dx, last_y, speedCorr, speed, r_d
 nature="DSC"
 
 # ================================================================================================================
@@ -391,7 +395,7 @@ dx_NS = dx_NS[dx_NS['celerity'].isin(celerities)]
 dx_NS = dx_NS[dx_NS['wavelength']==wavelength]
 dx_NS.insert(0, 'assumption', len(dx_NS) * [assumption])
 
-vd_NS = pd.read_csv(NDSC_assets + "\\" + "vd.csv")
+vd_NS = pd.read_csv(NDSC_speed_assets + "\\" + "vd.csv")
 vd_NS = vd_NS[vd_NS['celerity'].isin(celerities)]
 vd_NS = vd_NS[vd_NS['wavelength']==wavelength]
 vd_NS.insert(0, 'assumption', len(vd_NS) * [assumption])
@@ -408,7 +412,7 @@ dx_S = dx_S[dx_S['celerity'].isin(celerities)]
 dx_S = dx_S[dx_S['wavelength']==wavelength]
 dx_S.insert(0, 'assumption', len(dx_S) * [assumption])
 
-vd_S = pd.read_csv(DSC_assets + "\\" + "vd.csv")
+vd_S = pd.read_csv(DSC_speed_assets + "\\" + "vd.csv")
 vd_S = vd_S[vd_S['celerity'].isin(celerities)]
 vd_S = vd_S[vd_S['wavelength']==wavelength]
 vd_S.insert(0, 'assumption', len(vd_S) * [assumption])

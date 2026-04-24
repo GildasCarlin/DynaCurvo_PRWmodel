@@ -65,11 +65,10 @@ float phase(float x, float y){
     return phi0 - kc*t;
   }
 
-  if (surface==3){
+  if (surface==3){  // convr sinus
     float X=abs(x);
     float U=Heaviside(X-psi0, 0.0);
     return phi0 + kc*t + (1.0-U)*w*pow(X, 2.0) + U*w*psi0*(2.0*X-psi0);
-    //return phi0 + kc*t + w*pow(x, 2.0);
   }
 
   if (surface==4){  // snake_sinus

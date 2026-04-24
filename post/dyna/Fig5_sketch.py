@@ -28,7 +28,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 # ================================================================================================================
 NbLignes, NbColonnes=4, 4
 Largeur, Hauteur = 23, 20
-Largeur_ins, Hauteur_ins = 1., 1.
+Largeur_ins, Hauteur_ins = 1.1, 1.1
 fig1 = plt.figure(num="exotic_surfaces", figsize=(Largeur, Hauteur), constrained_layout=True)
 gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
 
@@ -36,36 +36,43 @@ gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
 plt.rcParams.update({"font.size": 15})
 
 # axes for trajectories
-ax1_traj = fig1.add_subplot(gs1[0, 0])
-ax2_traj = fig1.add_subplot(gs1[0, 1])
-ax3_traj = fig1.add_subplot(gs1[0, 2])
-ax4_traj = fig1.add_subplot(gs1[0, 3])
+ax1_NDSC = fig1.add_subplot(gs1[0, 0])
+ax2_NDSC = fig1.add_subplot(gs1[0, 1])
+ax3_NDSC = fig1.add_subplot(gs1[0, 2])
+ax4_NDSC = fig1.add_subplot(gs1[0, 3])
+ax5_NDSC = fig1.add_subplot(gs1[2, 0])
 
 # inset for surface pattern
-ax1_pattern = inset_axes(ax1_traj, width=Largeur_ins, height=Hauteur_ins)
-ax2_pattern = inset_axes(ax2_traj, width=Largeur_ins, height=Hauteur_ins)
-ax3_pattern = inset_axes(ax3_traj, width=Largeur_ins, height=Hauteur_ins)
-ax4_pattern = inset_axes(ax4_traj, width=Largeur_ins, height=Hauteur_ins)
+ax1_pattern = inset_axes(ax1_NDSC, width=Largeur_ins, height=Hauteur_ins)
+ax2_pattern = inset_axes(ax2_NDSC, width=Largeur_ins, height=Hauteur_ins)
+ax3_pattern = inset_axes(ax3_NDSC, width=Largeur_ins, height=Hauteur_ins)
+ax4_pattern = inset_axes(ax4_NDSC, width=Largeur_ins, height=Hauteur_ins)
 
+# axes for barycenters
+ax1_DSC = fig1.add_subplot(gs1[1, 0])
+ax2_DSC = fig1.add_subplot(gs1[1, 1])
+ax3_DSC = fig1.add_subplot(gs1[1, 2])
+ax4_DSC = fig1.add_subplot(gs1[1, 3])
 
-ax1 = fig1.add_subplot(gs1[1, :2])
-ax2 = fig1.add_subplot(gs1[1, 2:])
-ax3 = fig1.add_subplot(gs1[2, :2])
-#ax8 = fig1.add_subplot(gs1[1, 4])
+# other stats
+ax1 = fig1.add_subplot(gs1[2, 1])
+ax2 = fig1.add_subplot(gs1[2, 2])
+ax3 = fig1.add_subplot(gs1[2, 3])
+#ax4 = fig1.add_subplot(gs1[3, 2:])
 
 ## add labels
 def add_label(ax, txt, x=-0.05, y=1.15):
     ax.text(x, y, txt, transform=ax.transAxes, fontsize=20, fontweight="bold", va="top", ha="right")
 #
 
-add_label(ax1_traj, "A", y=1.1)
-add_label(ax2_traj, "B", y=1.1)
-add_label(ax3_traj, "C")
-add_label(ax4_traj, "D")
+add_label(ax1_NDSC, "A", y=1.1)
+add_label(ax2_NDSC, "B", y=1.1)
+add_label(ax3_NDSC, "C")
+add_label(ax4_NDSC, "D")
 add_label(ax1, "E")
 add_label(ax2, "F")
 add_label(ax3, "G")
-#add_label(ax8, "H")
+#add_label(ax4, "H")
 
 
 # ================================================================================================================
@@ -83,30 +90,37 @@ root=os.getcwd()
 path_to_assets=os.path.join(root, substrate_regime, "assets", study)
 
 ## list of wave celerity
-celerities = [0.0, 0.4]
+celerities = [0.0, 0.5]
+regimes = ["Static", "NDSC", "DSC"]
 
 # list of surfaces
-surfaces=["converging_sinus", "diverging_sinus", "Snake_sinus", "wells"]
+surfaces=["converging_sinus", "diverging_sinus", "Snake_sinus", "wells", "rotation"]
 
-
-
-
+# list of surfaces to hist
+surfaces_hist=["converging_sinus", "diverging_sinus", "Snake_sinus", "wells"]
+surfaces_labels=["Diverging", "Converging","Wells","Snake-like"]
 
 ## mapping of axes
-traj_mapping={("convr_sinus", 0.4):ax1_traj,
-              ("wells_sinus", 0.4):ax4_traj,
-              ("snake_sinus", 0.4):ax3_traj
-              }
+traj_mapping={("convr_sinus", 0, 1.0):ax1_NDSC,
+              ("convr_sinus", 0, -1.0):ax2_NDSC,
+              ("wells_sinus", 0, None):ax4_NDSC,
+              ("snake_sinus", 0, None):ax3_NDSC,
+              ("convr_sinus", 1, 1.0):ax1_DSC,
+              ("convr_sinus", 1, -1.0):ax2_DSC,
+              ("wells_sinus", 1, None):ax4_DSC,
+              ("snake_sinus", 1, None):ax3_DSC,
+              ("right_sinus", 0, None):ax5_NDSC
+             }
 
-patt_mapping={("convr_sinus", 0.4):ax1_pattern,
-              ("wells_sinus", 0.4):ax4_pattern,
-              ("snake_sinus", 0.4):ax3_pattern
+patt_mapping={("convr_sinus", "dyna"):ax1_pattern,
+              ("wells_sinus", "dyna"):ax4_pattern,
+              ("snake_sinus", "dyna"):ax3_pattern
               }
 
 
 ## color palette
-cele_palette=["#007172", "#F29325"]
-
+rege_palette=["#8F2913", '#E1BE6A','#40B0A6']
+bary_palette=["#3F2773", "#1F9E89", "#F2D027"]
 
 # figure
 show=False
@@ -129,7 +143,20 @@ def searchFilesToAnalyse(root):
     return paths_to_files
 #
 
-def loadTrajectoryData(filename, list=["Surface Index", "Number of Cells"], comment="#", sep=",", eg="="):
+def getAssumption(metadf):
+    mapping={0:"NDSC", 1:"DSC"}
+    return mapping[metadf["surf_assumption"]]
+#
+
+def getSign(metadf):
+    surface=metadf["Surface"]
+    if surface=="convr_sinus":
+        return np.sign(metadf["Angular Velocity"])
+    else:
+        return None
+#
+
+def loadTrajectoryData(filename, list=["Surface Index", "Number of Cells", "surf_assumption"], comment="#", sep=",", eg="="):
     # Read metadata
 
     metadata = {}
@@ -171,26 +198,32 @@ def formatTrajectories(df, center=True, convert=True):
 
     # convert µm to mm
     if convert:
-        data[['x', 'y']] /= 1000.0
+        pos0 = data.columns.get_loc("x")
+        data.insert(pos0, "X", data["x"]/1000.)
+        data.insert(pos0+1, "Y", data["y"]/1000.)       
 #
 
-def plotTrajectories(metadf, df, mapping, xticks=[-.6, 0., .6], yticks=[-.6, 0., .6], N=30, centered=True):
+def plotTrajectories(metadf, df, mapping, xticks=[-.8, 0., .8], yticks=[-.8, 0., .8], N=30, centered=True):
 
+    # spec
+    if metadf["Surface"]=="right_sinus":
+        xticks=[-1.7, 0., 1.3]
+        yticks=[-.5, 0., 2.5]
+    #
+    
     ## random cells id to plot
     IDlist = np.random.choice(df['cell'].unique(), size=N, replace=False)
 
     # select axe to plot
-    submetadf=(metadf["Surface"], metadf["Wave Celerity"])  # , np.sign(metadf["Angular Velocity"])
+    submetadf=(metadf["Surface"], metadf["surf_assumption"], getSign(metadf))  
     ax = mapping[submetadf]
-    if submetadf[0]=="convr_sinus" and np.sign(metadf["Angular Velocity"])<0.0:
-        ax=ax2_traj
     
     # extract trajectories to plot
     df_to_plot = df[df['cell'].isin(IDlist)].copy()
  
     sns.scatterplot(data=df_to_plot, 
-                    x='x', 
-                    y='y', 
+                    x='X', 
+                    y='Y', 
                     hue='cell', 
                     ax=ax, 
                     palette='deep', 
@@ -216,10 +249,64 @@ def plotTrajectories(metadf, df, mapping, xticks=[-.6, 0., .6], yticks=[-.6, 0.,
         ax.add_patch(rect)
 #
 
+def plotBarycenters(metadf, df, mapping, Timer=[10, 40, 80], plot_legend=False, xticks=[-.8, 0., .8], yticks=[-.8, 0., .8], palette=bary_palette):
+    
+    # select axe to plot
+    submetadf=(metadf["Surface"], "dyna")  # , np.sign(metadf["Angular Velocity"])
+    ax = mapping[submetadf]
+    if submetadf[0]=="convr_sinus" and np.sign(metadf["Angular Velocity"])<0.0:
+        ax=ax2_DSC
+
+    pop = df[df['frame'].isin(Timer)]
+    sns.kdeplot(data=pop,
+                x='X', 
+                y='Y',
+                hue='frame',
+                ax=ax, 
+                palette=palette,   
+                alpha=.8,
+                levels=10,
+                thresh=.01,
+                zorder=1,
+                legend=False
+                )
+    #
+
+    # plot barycenter
+    baryc = pop.groupby('frame').mean()
+    ax.scatter(baryc['X'], baryc['Y'], marker='o', s=150, c=palette, alpha = 1., edgecolors='black', zorder=2)
+
+    if plot_legend:
+        # legend and labels
+        handles, labels = plt.gca().get_legend_handles_labels()
+        items = []
+        for i in range(len(Timer)):
+            items.append(mpatches.Patch(facecolor=palette[i], label=float(Timer[i])*dt/60., edgecolor='black'))
+        #
+        handles.extend(items)
+        ax.legend(handles = handles, fontsize=15, title='t (min)', title_fontsize=15)
+    #
+
+    ax.set_xlabel('x (mm)', fontsize=20)
+    ax.set_ylabel('y (mm)', fontsize=20) 
+
+    ax.set_yticks(yticks) 
+    ax.set_xticks(xticks)
+    ax.set_xlim(xticks[0], xticks[-1])
+    ax.set_ylim(yticks[0], yticks[-1])
+    ax.tick_params(axis='both', which='major', labelsize=13)
+
+
 def plotPattern(metadf, path, mapping):
 
+    surface=metadf["Surface"]
+    if surface=="right_sinus":
+        return
+    #
+
+    
     # select axe to plot
-    submetadf=(metadf["Surface"], metadf["Wave Celerity"]) 
+    submetadf=(surface, "dyna") 
     ax = mapping[submetadf]
     if submetadf[0]=="convr_sinus" and np.sign(metadf["Angular Velocity"])<0.0:
         ax=ax2_pattern
@@ -236,17 +323,18 @@ def getEndingPoint(metadf, df, centered=True):
 
     # if trajectories has not been previously centered, it is done here
     if not centered:
-        first_points = df.loc[df["frame"]==1, "y"]
-        last_points = df.loc[df["frame"]==df["frame"].max(), "y"].reset_index(drop=True)
+        first_points = df.loc[df["frame"]==1, "Y"]
+        last_points = df.loc[df["frame"]==df["frame"].max(), "Y"].reset_index(drop=True)
         Last = pd.DataFrame(last_points.sub(first_points))
     else:
-        Last = df[df["time"] == df["time"].max()][["y"]].reset_index(drop=True)
+        Last = df[df["time"] == df["time"].max()][["Y"]].reset_index(drop=True)
     #
-
+    
     Last.columns=["last_y"]
     Last.insert(0, "celerity", metadf["Wave Celerity"])
     Last.insert(0, "pattern", metadf["Surface"])
     Last.insert(0, "sign", np.sign(metadf["Angular Velocity"]))
+    Last.insert(0, "assumption", getAssumption(metadf))
     return Last
 #
 
@@ -281,23 +369,31 @@ def computeCellVelocity(df, dt=15., check_unity=False, report=False):
     df.insert(pos0+8, "Vx_hat", df["Vx"]/df["speed"])
     df.insert(pos0+9, "Vy_hat", df["Vy"]/df["speed"])
     df.insert(pos0+10, "Vz_hat", df["Vz"]/df["speed"])
+
+    # plane speed=sqrt(vx^2+vy^2)
+    df.insert(pos0+11, "speed2D", (df["Vx"].pow(2) + df["Vy"].pow(2)).pow(.5))
+
+    # plane distance=sqrt(dx^2+dy^2)
+    df.insert(pos0+12, "distance2D", (df["Dx"].pow(2) + df["Dy"].pow(2)).pow(.5))
+
     if check_unity:
-        df.insert(pos0+7, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
+        df.insert(pos0+13, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
 
     if report:
         print("\n-- report on velocity")
-        print(df[["Vx", "Vy", "Vz", "speed"]].describe(), "\n")
+        print(df[["Dx", "Dy", "Dz", "Vx", "Vy", "Vz", "speed", "speed2D"]].describe(), "\n")
 
     return df
 #
 
-def getSpeed(metadf, df):
+def getSpeed(metadf, df, c="speed"):
 
-    Speed=df[["speed"]].copy()
+    Speed=df[[c]].copy()
 
     Speed.insert(0, "celerity", metadf["Wave Celerity"])
     Speed.insert(0, "pattern", metadf["Surface"])
     Speed.insert(0, "sign", np.sign(metadf["Angular Velocity"]))
+    Speed.insert(0, "assumption", getAssumption(metadf))
     return Speed
 #
 
@@ -305,15 +401,24 @@ def prepareToPlot(df):
     # this functions rename more elegant labels for surface patterns
     labels={"convr_sinus":"Converging",
             "wells_sinus":"Wells",
-            "snake_sinus": "Snake-like"}
+            "snake_sinus": "Snake-like",
+            "right_sinus": "Right Sinus"}
 
     df["pattern"] = df["pattern"].replace(labels)
     df.loc[(df["pattern"] == "Converging") & (df["sign"] < 0.0), "pattern"] = "Diverging"
     df.drop("sign", axis=1, inplace=True)
+
+    # defines regime 
+    labels={"NDSC":"Static"}
+    pos0 = df.columns.get_loc("celerity")
+
+    df.insert(pos0+1, "regime", df["assumption"])
+    df.loc[(df["celerity"] == 0.0) & (df["assumption"]=="NDSC"), "regime"] = "Static"
+
     return df
 #
 
-def plotDist(df, stat, ax, palette, whis=1.5, plot_legend=True):
+def plotDist(df, stat, ax, palette=rege_palette, whis=1.5, plot_legend=True, hue_order=regimes):
 
     # specify options
     # --------------------------
@@ -329,9 +434,19 @@ def plotDist(df, stat, ax, palette, whis=1.5, plot_legend=True):
     if stat=='speed':
         infos={'y_label1':'Cell speed (µm/s)'}
         ax.set_ylim(bottom=0., top=3.)
+
+    if stat=='speed2D':
+        infos={'y_label1':'Apparent cell speed (µm/s)'}
+        #ax.set_ylim(bottom=0., top=3.)
     
     if stat=="last_y":
-        infos={'y_label1':r'Cell position at $T$=20min (mm)'}
+        infos={'y_label1':"Cell position\n at "+"$T$=20min (mm)"}
+        ax.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
+        ax.set_ylim(bottom=-1., top=1.)
+    #
+
+    if stat=="distance":
+        infos={'y_label1':r'Apperent distance travelled (µm)'}
         ax.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
         ax.set_ylim(bottom=-1., top=1.)
     #
@@ -341,7 +456,8 @@ def plotDist(df, stat, ax, palette, whis=1.5, plot_legend=True):
     sns.boxplot(data=df, 
                    x="pattern", 
                    y=stat, 
-                   hue='celerity', 
+                   hue='regime', 
+                   hue_order=hue_order,
                    linewidth=1, 
                    palette=palette, 
                    ax=ax,
@@ -354,10 +470,11 @@ def plotDist(df, stat, ax, palette, whis=1.5, plot_legend=True):
     ax.set_ylabel(infos['y_label1'], fontsize=25)
     ax.set_xlabel("")
     if plot_legend:
-        ax.legend(fontsize=20, title="Celerity (µm/s)", title_fontsize=21, loc = "best")
+        ax.legend(fontsize=15, loc = "best")
     #
 
-    ax.tick_params(axis='both', which='major', labelsize=20)    
+    ax.tick_params(axis='both', which='major', labelsize=20)   
+    ax.set_xticklabels(labels=df["pattern"].unique(), rotation=45)
 #
 
 
@@ -384,23 +501,22 @@ for surface in surfaces:
     paths=[path for path in paths if float(re.findall(r"c=(\d*\.?\d*)", path)[0]) in celerities]
 
     # each simulation is treated independantly
-
     for path in paths:
         metadata, data=loadTrajectoryData(path)
 
         print("\nCurrent treated data:")
-        print("surface:", metadata["Surface"], "   Wave celerity (µm/s)", metadata["Wave Celerity"], "\n")
+        print("surface:", metadata["Surface"], "   Wave celerity (µm/s)", metadata["Wave Celerity"], "   Assumption", getAssumption(metadata), "\n")
 
         # format trajectories
         print("... format trajectories")
-        formatTrajectories(data)
+        formatTrajectories(data, convert=True)
 
         # plot trajectories and surface pattern
-        if metadata["Wave Celerity"]==0.4:
+        if metadata["Wave Celerity"] in [0.5]:
             print("... trajectories plotting")
             plotTrajectories(metadf=metadata, df=data, mapping=traj_mapping, N=30)
-
             plotPattern(metadf=metadata, path=os.path.join(working_folder, "pattern.jpg"), mapping=patt_mapping)
+            #plotBarycenters(metadata, data, mapping=DSC_bary_mapping)
         #
 
         # compute statistic
@@ -410,8 +526,9 @@ for surface in surfaces:
         list1.append(summary_by_cell_local)
 
         print("... compute time-statistics")
-        data=computeCellVelocity(data, report=True)
-        list2.append(getSpeed(metadata, data))
+        data=computeCellVelocity(data, report=False)
+        summary_by_time_local=getSpeed(metadata, data, c="speed")
+        list2.append(summary_by_time_local)
     #
 #
 
@@ -422,12 +539,22 @@ summary_by_time_global=pd.concat(list2, ignore_index=True)
 print("\n--------------------------------------------\n")
 print("\n ... plot statistics")
 
+# format to plot
 summary_by_cell_global=prepareToPlot(summary_by_cell_global)
 summary_by_time_global=prepareToPlot(summary_by_time_global)
 
-plotDist(summary_by_cell_global, stat="last_y", ax=ax1, palette=cele_palette, whis=1.5, plot_legend=True)
-plotDist(summary_by_cell_global, stat="dx", ax=ax2, palette=cele_palette, whis=1.5, plot_legend=True)
-plotDist(summary_by_time_global, stat="speed", ax=ax3, palette=cele_palette, whis=3., plot_legend=True)
+# filter assumptions
+summary_by_cell_to_plot=summary_by_cell_global[summary_by_cell_global["assumption"].isin(regimes)]
+summary_by_time_to_plot=summary_by_time_global[summary_by_time_global["assumption"].isin(regimes)]
+
+summary_by_cell_to_plot=summary_by_cell_to_plot[summary_by_cell_to_plot["pattern"].isin(surfaces_labels)]
+summary_by_time_to_plot=summary_by_time_to_plot[summary_by_time_to_plot["pattern"].isin(surfaces_labels)]
+
+# plots
+plotDist(summary_by_cell_to_plot, stat="last_y", ax=ax1, whis=1.5, plot_legend=True)
+plotDist(summary_by_cell_to_plot, stat="dx", ax=ax2, whis=1.5, plot_legend=True)
+plotDist(summary_by_time_to_plot, stat="speed", ax=ax3, whis=3., plot_legend=True)
+
 
 
 

@@ -67,39 +67,26 @@ def computeCellVelocity(df, dt=15., check_unity=False, report=False):
     pos0 = df.columns.get_loc("y")
 
     ## dx and dy
-    diff_result = df.groupby("cell")[["x", "y", "z"]].diff()
+    diff_result = df.groupby("cell")[["x", "y"]].diff()
     df.insert(pos0+1, "Dx", diff_result["x"])
     df.insert(pos0+2, "Dy", diff_result["y"])
-    df.insert(pos0+1, "Dz", diff_result["z"])
 
     # vx=dx/dt and vy
     df.insert(pos0+3, "Vx", diff_result["x"]/dt)
     df.insert(pos0+4, "Vy", diff_result["y"]/dt)
-    df.insert(pos0+2, "Vz", diff_result["z"]/dt)
+    df.insert(pos0+5, "speed", np.sqrt(np.square(df[["Vx", "Vy"]]).sum(axis=1)))
     df = df.dropna().reset_index(drop=True)
-
-    # speed=sqrt(vx^2+vy^2)
-    df.insert(pos0+5, "speed", (df["Vx"].pow(2) + df["Vy"].pow(2)).pow(.5))
-    df.insert(pos0+3, "speed3D", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
-    df.insert(pos0+4, "abs_error_speed", (df["speed"] - df["speed3D"]).abs())
-    df.insert(pos0+5, "relative_error_speed", 100.*df["abs_error_speed"] / df["speed3D"])
 
     # normalized velocity vx_hat=vx/speed
     df.insert(pos0+6, "Vx_hat", df["Vx"]/df["speed"])
     df.insert(pos0+7, "Vy_hat", df["Vy"]/df["speed"])
-    df.insert(pos0+7, "Vz_hat", df["Vz"]/df["speed"])
-    if check_unity:
-        df.insert(pos0+7, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2)).pow(.5))
+    #if check_unity:
+    #    df.insert(pos0+7, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2)).pow(.5))
 
 
     if report:
         print("\n-- report on velocity")
-        print(df[["Dx", "Dy", "Dz", "Vx", "Vy", "Vz", "speed", "speed3D", "abs_error_speed", "relative_error_speed"]].describe(), "\n")
-
-        (fig2, axs) = plt.subplots(1, 3)
-        axs[0].hist(df["relative_error_speed"])
-        axs[1].hist(df["speed"])
-        axs[2].hist(df["speed3D"])
+        print(df[["Dx", "Dy", "Vx", "Vy"]].describe(), "\n")
 
     return df
 #
@@ -184,6 +171,8 @@ def normalizeHeight(metadata, df, report=False):
 
     # get coresponding x
     df.insert(pos0+2, "xbis", np.arccos(df["z_hat"]) / (k*L))
+
+    print(df)
 
     if report:
         print("\n-- report on height")
@@ -494,11 +483,11 @@ def plotVelocityGradientPhase(df, ax, N=10):
 def plotCurvatureVsXaxis(metadata, ax):
 
     # surface parameters
-    A=metadata["Amplitude"]
-    L=metadata["Wavelength"]
+    A=1.           #metadata["Amplitude"]
+    L=1.    #metadata["Wavelength"]
 
     # X axis
-    x = np.linspace(0., .5*L, 200)
+    x = np.linspace(0., L, 200)
     k=2.*np.pi/L
 
     # functions definition
@@ -520,19 +509,19 @@ def plotCurvatureVsXaxis(metadata, ax):
 
     def contr(x):
         hx=-A*k*np.sin(k*x)
-        g=1./(1.+hx**2.0)
+        g=1./np.sqrt(1.+hx**2.0)
         return [g, hx]
     #
 
 
     # Créer les segments de ligne
-    points = np.array([x/L, h(x)/A]).T.reshape(-1, 1, 2)
+    points = np.array([x, h(x)]).T.reshape(-1, 1, 2)
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
     
     # Créer la LineCollection avec la cmap
-    norm = plt.Normalize(-A*k**2., A*k**2.)
-    lc = LineCollection(segments, cmap="viridis", norm=norm)
-    lc.set_array(H(x))  # Assigner les valeurs de couleur
+    norm = plt.Normalize(-1., 1.)
+    lc = LineCollection(segments, cmap="viridis")
+    lc.set_array(H(x)/(A*k**2.))  # Assigner les valeurs de couleur
     lc.set_linewidth(6)
     
     # Ajouter la collection
@@ -541,12 +530,12 @@ def plotCurvatureVsXaxis(metadata, ax):
     
     # Ajouter une colorbar
     cax = inset_axes(ax,
-                     width="45%",
-                     height="5%",
-                     loc="upper right",
+                     width="5%",
+                     height="45%",
+                     loc="upper center",
                      borderpad=1.)
     
-    cbar = plt.colorbar(line, cax=cax, orientation="horizontal")
+    cbar = plt.colorbar(line, cax=cax, orientation="vertical")
     cbar.set_label(r"Normalized $H$", fontsize=15)
     cbar.set_ticks([-1, -0.5, 0, 0.5, 1])
     cax.tick_params(labelsize=10)
@@ -554,30 +543,41 @@ def plotCurvatureVsXaxis(metadata, ax):
     ax.set_xlabel(r"$x/\lambda$", fontsize=20)
     ax.set_ylabel(r"$h(x)/a$", fontsize=20)
 
-    alpha=1.
-    poss=[.05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .45]  #[.05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .45, .55, .6, .65, .75, .8, .85, .9, .95]
+    poss=[.05, 0.1, 0.15, 0.2, 0.25, .3, .35, .4, .45, .55, .6, .65, .7, .75, .8, .85, .9, .95]
     for pos in poss:
-        [g, hx]=contr(pos*L)
-        norm=np.sqrt((gH(pos*L))**2.+(gH(pos*L))**2.)
+        [g, hx]=contr(pos)
+
+        alpha = 0.06
+        norm = np.sqrt(1.**2 + hx**2)
+        dx = alpha * np.sign(gH(pos)) / norm
+        dy = alpha * np.sign(gH(pos))*hx / norm
+        
         ax.arrow(x=pos,
-                 y=0.1+h(pos*L)/A,
-                 dx=alpha*g*gH(pos*L),#, /norm,
-                 dy=alpha*g*hx*gH(pos*L),#, /norm,
+                 y=0.15+h(pos),
+                 dx=dx,
+                 dy=dy,
                  color="indianred",
                  width=.007,
                  zorder=2,
                  length_includes_head=False,
                  head_width=.02,
                  head_length=.01)
+        
     
-    ax.set_xticks([0., 0.25, 0.5])
+    ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
     ax.set_yticks([-1., -.5, 0., .5, 1.])
-    
+
+    # arrow for k
+    ax.arrow(.72, 0.2, 0.2, 0., width=.04, head_length=.08, color='grey', length_includes_head=True, transform=ax.transAxes)
+    ax.text(0.8, 0.3, 
+                r"$\bf k$",
+                color='grey', rotation = 'horizontal', fontsize=15, fontweight='bold', va='center', ha='center', transform=ax.transAxes
+                )
 
     import matplotlib.lines as mlines
     arrow_patch = mlines.Line2D([], [], color="indianred", marker=">", markersize=10, linestyle="-", linewidth=2)
     handles=[arrow_patch]
-    ax.legend(handles=handles, labels=[r"$\vec{\nabla}H$"], loc="lower left", fontsize=14)
+    ax.legend(handles=handles, labels=[r"$\bf e_1$"], loc="lower left", fontsize=14)
 #
 
 def plotSpeedInPhase(metadata, df, axs, Nt=1):
@@ -644,7 +644,7 @@ def prepareData(metadf, df):
     df[["y", "theta"]] *= -1.
 
     ## compute vx, vy and speed
-    df=computeCellVelocity(df, dt=metadf["Time Interval"], report=False)
+    df=computeCellVelocity(df, dt=metadf["Time Interval"], report=True)
 
     ## compute wave vector
     df=computeWaveVector(df)
@@ -658,7 +658,7 @@ def prepareData(metadf, df):
                         )
     
     ## height
-    df=normalizeHeight(metadf, df, report=False)
+    df=normalizeHeight(metadf, df, report=True)
 
     # sequences of followers
     df, df_followers=isolateFollowers(df,

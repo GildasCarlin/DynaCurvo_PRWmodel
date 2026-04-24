@@ -8,6 +8,8 @@ import os
 import time
 import regex as re
 
+import numpy as np
+
 
 # ================================================================================================================
 # ================================================================================================================
@@ -20,11 +22,13 @@ import regex as re
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="DSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+study="SpeedDistribution"
 
 # conditions in the study
-Lambdas=[80.0, 40.0, 20.0]
-celerity_range=[0., 4.]
+Assumptions=["DSC", "NDSC"]
+Lambdas=[20.0]
+celerities=[0.0, 0.1, 0.4, 0.6, 2.0]
+max_c, min_c = 0., 4.0
 c_step=.1
 
 # exported file (at the end of the simulation)
@@ -41,8 +45,7 @@ path_to_assets=os.path.join("..", "post", substrate_regime, "assets", study)
 
 ## ------------------------------------ simulations parameters
 
-# assumptions:    cells are sensitive to curvature (K_assumption) ? cells are sensitive to the wave (W_assumption) ? 
-W_assumption = r"true"
+# assumptions:    cells are sensitive to curvature (K_assumption) ? cells are sensitive to the wave (W_assumption) ?
 K_assumption = r"true"
 
 # substrate pattern:   right_sinus  /  convr_sinus  /   wells_sinus  /  snake_sinus
@@ -54,11 +57,11 @@ angular_velocity=0.0
 initial_angle="-Math.PI/2.0"
 
 # condition
-simu_length=1200.0  # seconds
-sampling_rate=15.0
+simu_length=600.0  # seconds
+sampling_rate=0.1
 
 # others
-nbCell=300
+nbCell=150
 export_data=r"true"
 draw_cells=r"false"
 
@@ -69,14 +72,23 @@ draw_cells=r"false"
 # ================================================================================================================
 # ================================================================================================================
 
-def createFolders(root, Wavelengths, Celerities, step):
-    for wavelength in Wavelengths:
-        celerity=min(Celerities)
-        while celerity <= max(Celerities):
-            path=os.path.join(root, "L="+str(round(wavelength, 1)), "c="+str(round(celerity, 2)))
-            if not os.path.exists(path):
-                os.makedirs(path)
-            celerity+=step
+def createFolders(root, Wavelengths, Assumptions, Celerities=None, min_c=None, max_c=None, step=None):
+    # method range: celerities are given by a range and a step, the list is constructed
+    # method list: the list of celerities is explicitly given
+    
+    if Celerities is not None:
+        Celerities=Celerities
+    elif all(v is not None for v in [min_c, max_c, step]):
+        Celerities=list(np.arange(min_c, max_c + step, step))
+    Celerities=[round(c, 2) for c in Celerities]
+
+    for assumption in Assumptions:
+        for wavelength in Wavelengths:
+            for celerity in Celerities:
+                path=os.path.join(root, assumption, "L="+str(round(wavelength, 1)), "c="+str(round(celerity, 2)))
+                if not os.path.exists(path):
+                    os.makedirs(path)
+            #
         #
     #
 #
@@ -98,7 +110,6 @@ def prepareUI():
     temp_file.close()
 
     # edit parameters in UI
-    temp_content = re.sub(r'let\ssurf_assumption\s*=\s*(true|false);', r'let surf_assumption='+W_assumption+r';', temp_content) 
     temp_content = re.sub(r'let\scurvature_assumption\s*=\s*(true|false);', r'let curvature_assumption='+K_assumption+r';', temp_content)
 
     temp_content = re.sub(r"let\ssurface_title\s*=\s*(\'|\")\w*(\'|\");", "let surface_title=\'"+pattern+"\';", temp_content)
@@ -119,15 +130,22 @@ def prepareUI():
     UI_to_write.close()
 #
 
-def editUI(wl, c):
+def editUI(ass, wl, c):
     # this function edits param_user.js but only parameters which change at each simulation simulations
 
+    def getAssumption(assumption):
+        mapping={"NDSC":r"false", "DSC":r"true"}
+        return mapping[assumption]
+    #
+    
     # open UI before editing parameters
     temp_file = open(path_to_UI)
     temp_content = temp_file.read()
     temp_file.close()
 
     # edit parameters in UI
+    temp_content = re.sub(r'let\ssurf_assumption\s*=\s*(true|false);', r'let surf_assumption='+getAssumption(ass)+r';', temp_content) 
+
     temp_content = re.sub(r'let\sc\s*=\s*(\d*\.?\d*);', r'let c='+str(c)+r';', temp_content)
     temp_content = re.sub(r'let\slambda\s*=\s*(\d*\.?\d*);', r'let lambda='+str(wl)+r';', temp_content)
 
@@ -148,7 +166,7 @@ print("\nLaunch Multiple Simulations Process")
 print("==========================================================\n")
 print("substrate regime: " + substrate_regime + "\nstudy: " + study)
 
-createFolders(path_to_assets, Lambdas, celerity_range, c_step)
+createFolders(path_to_assets, Lambdas, Assumptions, Celerities=celerities)
 
 path_to_simu = searchFilesToAnalyse(path_to_assets)
 total_number_of_simu=len(path_to_simu)
@@ -165,11 +183,11 @@ for path in path_to_simu:
 
     print("...... preparation")
     # parameters to edit
-    (wl, c) = re.findall(r'L=(\d+\.\d+|\d+)\\c=(\d+\.\d+|\d+)', path)[0]
+    (ass, wl, c) = re.findall(r'(DSC|NDSC)\\L=(\d+\.\d+|\d+)\\c=(\d+\.\d+|\d+)', path)[0]
     
-    print('... parameters  {}µm  {}µm/s'.format(wl, c))
+    print('...  assumption {}, wavelength {}µm, wave celerity {}µm/s'.format(ass, wl, c))
     # parameters which are specific to this simulation
-    editUI(wl, c)
+    editUI(ass, wl, c)
 
     # run simulation
     os.system(r"start http://localhost:8000//" + path_to_model)

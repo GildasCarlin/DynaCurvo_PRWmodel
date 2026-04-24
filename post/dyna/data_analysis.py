@@ -9,6 +9,8 @@ import regex as re
 import json
 import pandas as pd
 
+import numpy as np
+
 
 
 # ================================================================================================================
@@ -73,7 +75,6 @@ def formatTrajectories(df, center=False):
     return df
 #
 
-
 def get_Dx(metadata, data):
     Dx_by_cell = []
     for i in data['cell'].unique(): # calculates Dx for each cell
@@ -89,10 +90,9 @@ def get_Dx(metadata, data):
 
 def get_vd(metadata, data):
 
-    df = data["speed"].copy()
-    df = pd.DataFrame(df)
-    df.insert(0, 'celerity', len(df)*[metadata['Wave Celerity']])
-    df.insert(0, 'wavelength', len(df)*[int(metadata['Wavelength'])])
+    df = data[["speed", "speedCorr", "VzSub"]].copy()
+    df.insert(0, 'celerity', metadata['Wave Celerity'])
+    df.insert(0, 'wavelength', int(metadata['Wavelength']))
     return df
 #
 
@@ -109,35 +109,50 @@ def get_last_point(metadf, df):
     Last.columns=['last_y']
     Last['r_d']=Last['last_y'].div(c*metadata['Simulation Duration'])
 
-    Last.insert(0, 'celerity', len(Last)*[c])
-    Last.insert(0, 'wavelength', len(Last)*[int(metadata['Wavelength'])])
+    Last.insert(0, 'celerity', c)
+    Last.insert(0, 'wavelength', int(metadata['Wavelength']))
     return Last
 #
 
-def computeCellVelocity(df, dt=15., check_unity=False, report=False):
-    pos0 = df.columns.get_loc("y")
+def computeCellVelocity(metadf, df, check_unity=False, report=False):
+    dt=metadata["Time Interval"]
+    
+    pos0 = df.columns.get_loc("z")
 
-    ## dx and dy
+    ## FIRST: the cell velocity is computed in the external fixed frame
+    ##  v=(r(t_{i+1})-r(t_i) )/Delta t
+    
+    ## displacement components in the external fixed frame
     diff_result = df.groupby("cell")[["x", "y", "z"]].diff()
     df.insert(pos0+1, "Dx", diff_result["x"])
     df.insert(pos0+2, "Dy", diff_result["y"])
     df.insert(pos0+3, "Dz", diff_result["z"])
 
-    # vx=dx/dt and vy
+    # velocity components in the external fixed frame
     df.insert(pos0+4, "Vx", diff_result["x"]/dt)
     df.insert(pos0+5, "Vy", diff_result["y"]/dt)
     df.insert(pos0+6, "Vz", diff_result["z"]/dt)
     df = df.dropna().reset_index(drop=True)
 
-    # speed=sqrt(vx^2+vy^2++vz^2)
+    # speed=sqrt(vx^2+vy^2++vz^2) of the cell in the external fixed frame
     df.insert(pos0+7, "speed", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
 
-    # normalized velocity vx_hat=vx/speed
-    df.insert(pos0+8, "Vx_hat", df["Vx"]/df["speed"])
-    df.insert(pos0+9, "Vy_hat", df["Vy"]/df["speed"])
-    df.insert(pos0+10, "Vz_hat", df["Vz"]/df["speed"])
+    ## SECOND: the cell velocity is computed in the frame attached to surface but parallel to the external fixed frame
+    ## v=(r(t_{i+1})-r(t_i) )/Delta t - (0, 0, h(x(t_i), t_{i+1}) - h(x(t_i), t_{i}))/Delta t
+
+    k=2.*np.pi/metadf["Wavelength"]
+    df.insert(pos0+8, "zSub", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"]+dt)))
+    df.insert(pos0+9, "VzSub", (df["zSub"] - df["z"])/dt)
+    df.insert(pos0+10, "VzCorr", df["Vz"] - df["VzSub"])
+    df.insert(pos0+11, "speedCorr", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCorr"].pow(2)).pow(.5))
+    df.insert(pos0+12, "speedSub", df["VzSub"].pow(2).pow(.5))
+
     if check_unity:
-        df.insert(pos0+7, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
+        df.insert(pos0+12, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
+        # normalized velocity vx_hat=vx/speed
+        df.insert(pos0+13, "Vx_hat", df["Vx"]/df["speed"])
+        df.insert(pos0+14, "Vy_hat", df["Vy"]/df["speed"])
+        df.insert(pos0+15, "Vz_hat", df["Vz"]/df["speed"])
 
     if report:
         print("\n-- report on velocity")
@@ -159,7 +174,7 @@ def computeCellVelocity(df, dt=15., check_unity=False, report=False):
 
 # study
 substrate_regime="dyna"  # dyna or static
-study=os.path.join("Other_surfaces", "c=0.0")
+study="NDSC_SpeedDistribution" # os.path.join("SpeedDistribution", "c=0.0")
 
 # assets
 path_to_assets=os.path.join(os.getcwd(), substrate_regime, "assets", study)
@@ -169,7 +184,7 @@ must_be_int = ['Surface Index', 'Number of Cells']
 
 ## list of wave celerity to plot distributions
 indiv=False
-c_list = [.1, .6, 3., 10.]
+c_list = [.1, .4, .6, 2.]
 
 ## velocity mean or med
 vel_cent = 'mean'
@@ -194,8 +209,8 @@ for path in files_to_analyse:
     print('------------------------------------ data analysis: wavelength={}µm, celerity={}µm/s'.format(wl, c))
     # trajectories
     print('... trajectories')
-    data=formatTrajectories(data, center=True)
-    data=computeCellVelocity(data, dt=15., check_unity=False, report=False)
+    data=formatTrajectories(data, center=False)
+    data=computeCellVelocity(metadata, data, check_unity=False, report=False)
 
     if indiv and wl==20. and c in c_list: 
         print('... export')

@@ -53,9 +53,12 @@ ax_ins8 = inset_axes(ax_traj8, width=Largeur_ins, height=Hauteur_ins)
 
 ## axes pour plot les autres indicateurs (Dx, velocity etc)
 ax1 = fig1.add_subplot(gs1[2, :2])
-ax2 = fig1.add_subplot(gs1[2, 2:])
-ax3 = fig1.add_subplot(gs1[3, :2])
-ax4 = fig1.add_subplot(gs1[3, 2:])
+ax2 = fig1.add_subplot(gs1[2, 2])
+ax3 = fig1.add_subplot(gs1[2, 3])
+ax4 = fig1.add_subplot(gs1[3, :2])
+ax5 = fig1.add_subplot(gs1[3, 2])
+ax6 = fig1.add_subplot(gs1[3, 3])
+
 
 ## add labels
 def add_label(ax, txt, x=-0.05, y=1.1):
@@ -76,6 +79,8 @@ add_label(ax1, 'C')
 add_label(ax2, 'D')
 add_label(ax3, 'E')
 add_label(ax4, 'F')
+add_label(ax5, 'G')
+add_label(ax6, 'H')
 
 ## font size
 plt.rcParams.update({'font.size': 50})
@@ -121,13 +126,13 @@ def plot_traj(metadata, data, N, mapping, xticks, yticks, center=True):
 
     if mapping == ax_mapping_traj_NS:
         ax.text(.5, 1.05, 
-            r'$\bf \lambda$={}µm, $\bf c$={}µm/s, $\bf T$=20min'.format(int(wl), c), 
+            r'$\bf c$={}µm/s, $\bf T$=20min'.format(c), 
             fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
             )
         
     if ax == ax_traj1:
         ax.text(-.25, .5, 
-                r"NDSC cells $\bf f_{dyna}=0$", 
+                r"DSC(-) cells $\bf v_{dyna}=0$", 
                 rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
@@ -156,7 +161,7 @@ def plot_traj(metadata, data, N, mapping, xticks, yticks, center=True):
 
     if ax == ax_traj5:
         ax.text(-.25, .5, 
-                r"DSC cells $\bf f_{dyna}\neq 0$", 
+                r"DSC(+) cells $\bf v_{dyna}\neq 0$", 
                 rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
         #
@@ -223,65 +228,75 @@ def plot_baryc(metadata, data, list_frame, mapping, xticks, yticks, palette):
     axins.tick_params(axis='both', which='major', labelsize=13)
 #
 
-def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True):
+def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True, hue='assumption', color=None):
 
-    # specify options
-    if quantity=='dx':
-        infos={'y_label1':r'$D_{\perp}$ ',
-        }
 
-        ## dx=0.5 ==> no bias
-        ax1.axhline(y=.5, linewidth = 2, color='#8C0335', linestyle='--')
-        ## dx belongs to [0, 1]
-        ax1.set_ylim(bottom=0., top=1.07)
-        
-
-    elif quantity=='speed':
-        infos={'y_label1':'Cell speed (µm/s)',
-        }
-        ax1.set_ylim(bottom=0., top=3.1)
-
-    elif quantity=='r_d':
-        infos={'y_label1':r'$r_d$ ',
-        }
-        ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
-        ax1.axhline(y=1., linewidth = 2, color='#8C0335', linestyle='--')
-        #ax1.margins(y=.2)
-        ax1.set_ylim(bottom=-1.2, top=1.7)
-    
-    elif quantity=='last_y':
-        infos={'y_label1':r'Cell position at $T$=20min (mm)',
-        }
-        ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
-        ax1.set_ylim(bottom=-.2, top=0.83)
-    #
-        
     # plot distributions
+    #-----------------------------------------------------
     sns.boxplot(data=data, 
                    x='celerity', 
                    y=quantity, 
-                   hue='assumption', 
+                   hue=hue, 
                    linewidth=1, 
-                   palette=palette, 
+                   palette=palette,
+                   color=color, 
                    ax=ax1,
                    whis = whis,
-                   legend=plot_legend
+                   legend=plot_legend,
+                   zorder=1
                    )
     #
 
-    # labels fig 1
-    ax1.set_ylabel(infos['y_label1'], fontsize=25)
+    # axis specificity
+    if quantity=='dx':
+        ax1.axhline(y=.5, linewidth = 2, color='#8C0335', linestyle='--')
+        ax1.set_ylim(bottom=0., top=1.07)
+    
+    if quantity in ['VzSub']:
+        celerities=sorted(data["celerity"].unique())
+        X, Y = [], []
+        for i, cel in enumerate(celerities):
+            Y.append(10.*2.*np.pi/20. * cel)
+            X.append(i)
+        ax1.scatter(X, Y, marker="x", s=400, linewidth=2, color="red", zorder=10)
+        ax1.scatter(X, [-1.*v for v in Y], marker="x", s=400, linewidth=2, color="red", zorder=10)
+        
+    if quantity in ["speed"]:
+        ax1.set_ylim(bottom=-.1, top=9.)
+    
+    if quantity in ["speedCorr"]:
+        ax1.set_ylim(bottom=-.1, top=6.)
+
+    if quantity=='r_d':
+        ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
+        ax1.axhline(y=1., linewidth = 2, color='#8C0335', linestyle='--')
+        ax1.set_ylim(bottom=-1.2, top=1.7)
+    
+    if quantity=='last_y':
+        ax1.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
+        ax1.set_ylim(bottom=-.2, top=0.83)
+    #
+
+    # labels fig
+    YLabel={"dx":r'$D_{\mathbf{k}}$',
+        "speed":r'Cell speed $|| \mathbf{v^{obs}} ||_2$ (µm/s)',
+        "speedCorr":r'Cell speed $|| \mathbf{v} ||_2$ (µm/s)',
+        "VzSub":'Substrate vertical velocity (µm/s)',
+        "r_d":r'$f$',
+        "last_y":r"$\mathbf{r}(t=T)\cdot \mathbf{\hat{k}}$"+" at "+r'$T$=20min (mm)'
+        }
+    ax1.set_ylabel(YLabel[quantity], fontsize=25)
     ax1.set_xlabel(r'Wave celerity (µm/s)', fontsize=25)
+    ax1.tick_params(axis='both', which='major', labelsize=20) 
     if plot_legend:
         ax1.legend(fontsize=30, title='Assumption', title_fontsize=32, loc = "best")
     #
-
-    ax1.tick_params(axis='both', which='major', labelsize=20)    
+       
 #
 
 def add_stat(ax, eff_size, sign=5*['**'], x=[.1, .3, .5, .7, .9], y=5*[.955], size=0.1):
     for i in range(len(sign)):
-        ax.text(x=x[i], y=y[i], s=sign[i] + "\n" + eff_size['ES'] + r"=" + str(eff_size['values'][i]), transform=ax.transAxes, fontsize=15, fontweight='bold', va='center', ha='center')
+        ax.text(x=x[i], y=y[i], s=sign[i] + "\n" + eff_size['ES'] + r"=" + str(eff_size['values'][i]), transform=ax.transAxes, fontsize=13, fontweight='bold', va='center', ha='center')
         
         hlen=.5*size
         ymin, ymax = ax.get_ylim()
@@ -318,11 +333,16 @@ def format_traj(data, center=False, convert=True):
 substrate_regime="dyna"  # dyna or static
 NDSC_study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
 DSC_study="DSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
+DSC_speed="DSC_SpeedDistribution"
+NDSC_speed="NDSC_SpeedDistribution"
 # assets
-NDSC_assets=os.path.join(os.getcwd(), substrate_regime, "assets", NDSC_study)
-DSC_assets=os.path.join(os.getcwd(), substrate_regime, "assets", DSC_study)
+root=os.getcwd()
+NDSC_assets=os.path.join(root, substrate_regime, "assets", NDSC_study)
+DSC_assets=os.path.join(root, substrate_regime, "assets", DSC_study)
+DSC_speed_assets=os.path.join(root, substrate_regime, "assets", DSC_speed)
+NDSC_speed_assets=os.path.join(root, substrate_regime, "assets", NDSC_speed)
 
-mapping_path_assumption={"NDSC":NDSC_assets, "DSC":DSC_assets}
+mapping_path_assumption={"DSC(-)":NDSC_assets, "DSC(+)":DSC_assets}
 
 ## nb oc cell trak to plot
 NtoPlot=60
@@ -394,38 +414,38 @@ print('\n------------------------------------ get general indicators')
 print('---------------------- read data')
 
 #### NS
-assumption = 'NDSC'
+assumption = 'DSC(-)'
 last_NS = pd.read_csv(NDSC_assets + '\\' + "last.csv")
 last_NS = last_NS[last_NS['celerity'].isin(celerities)]
 last_NS = last_NS[last_NS['wavelength']==wavelength]
-last_NS.insert(0, 'assumption', len(last_NS) * [assumption])
+last_NS.insert(0, 'assumption', assumption)
 
 dx_NS = pd.read_csv(NDSC_assets + '\\' + "dx.csv")
 dx_NS = dx_NS[dx_NS['celerity'].isin(celerities)]
 dx_NS = dx_NS[dx_NS['wavelength']==wavelength]
-dx_NS.insert(0, 'assumption', len(dx_NS) * [assumption])
+dx_NS.insert(0, 'assumption', assumption)
 
-vd_NS = pd.read_csv(NDSC_assets + '\\' + "vd.csv")
+vd_NS = pd.read_csv(NDSC_speed_assets + '\\' + "vd.csv")
 vd_NS = vd_NS[vd_NS['celerity'].isin(celerities)]
 vd_NS = vd_NS[vd_NS['wavelength']==wavelength]
-vd_NS.insert(0, 'assumption', len(vd_NS) * [assumption])
+vd_NS.insert(0, 'assumption', assumption)
 
 #### S
-assumption = 'DSC'
+assumption = 'DSC(+)'
 last_S = pd.read_csv(DSC_assets + '\\' + "last.csv")
 last_S = last_S[last_S['celerity'].isin(celerities)]
 last_S = last_S[last_S['wavelength']==wavelength]
-last_S.insert(0, 'assumption', len(last_S) * [assumption])
+last_S.insert(0, 'assumption', assumption)
 
 dx_S = pd.read_csv(DSC_assets + '\\' + "dx.csv")
 dx_S = dx_S[dx_S['celerity'].isin(celerities)]
 dx_S = dx_S[dx_S['wavelength']==wavelength]
-dx_S.insert(0, 'assumption', len(dx_S) * [assumption])
+dx_S.insert(0, 'assumption', assumption)
 
-vd_S = pd.read_csv(DSC_assets + '\\' + "vd.csv")
+vd_S = pd.read_csv(DSC_speed_assets + '\\' + "vd.csv")
 vd_S = vd_S[vd_S['celerity'].isin(celerities)]
 vd_S = vd_S[vd_S['wavelength']==wavelength]
-vd_S.insert(0, 'assumption', len(vd_S) * [assumption])
+vd_S.insert(0, 'assumption', assumption)
 
 ######## concat
 all_last = pd.concat([last_NS, last_S], ignore_index=True)
@@ -446,15 +466,35 @@ plot_dist(data=       all_last,
 print('---------------------- plot dx')
 plot_dist(data=       all_dx, 
           quantity=   'dx', 
-          ax1=        ax2, 
+          ax1=        ax4, 
           palette=    palette_for_assumption,
           plot_legend=True
           )
 
 print('---------------------- plot vd')
-plot_dist(data=       all_vd, 
+plot_dist(data=       all_vd.copy().sample(frac=0.03), 
           quantity=   'speed', 
           ax1=        ax3, 
+          palette=    palette_for_assumption,
+          whis=       3.,
+          plot_legend=False
+          )
+
+print('---------------------- plot substrate speed')
+plot_dist(data=       all_vd[all_vd["assumption"]=="DSC(-)"].copy().sample(frac=0.03),#all_vd.copy().sample(frac=0.03),   #
+          quantity=   'VzSub', 
+          ax1=        ax5,
+          palette=    None,
+          color=      'darkgray',
+          whis=       3.,
+          hue=        None,
+          plot_legend=False
+          )
+
+print('---------------------- plot cell speed')
+plot_dist(data=       all_vd.copy().sample(frac=0.03), 
+          quantity=   'speedCorr', 
+          ax1=        ax6, 
           palette=    palette_for_assumption,
           whis=       3.,
           plot_legend=False
@@ -465,7 +505,7 @@ print('---------------------- plot r_d')
 all_last = all_last[all_last['celerity'].isin(celerities[1:])]
 plot_dist(data=       all_last, 
           quantity=   'r_d',  
-          ax1=        ax4, 
+          ax1=        ax2, 
           palette=    palette_for_assumption,
           plot_legend=False
           )
@@ -533,11 +573,11 @@ for celerity in celerities[1:]:
            )
 #
 
-add_stat(ax1, eff_size={'ES':r'$A_w$', 'values':[0.48, 0.31, 0.3, 0.1, 0.36]}, sign=["NS"]+4*["**"], y=2*[.59]+3*[.955])                   # Cohen's d=[1.4, 2., 47., 10.]
-add_stat(ax2, eff_size={'ES':r'$A_w$', 'values':[0.48, 0.49, 0.38, 0.37, 0.46]}, sign=2*["NS"]+2*["**"]+["NS"])                                     # Cohen's d=[0.6, 1.2, 14., 5.2]
-add_stat(ax3, eff_size={'ES':r'$A_w$', 'values':[0.5, 0.5, 0.46, 0.48, 0.5]}, sign=2*["NS"]+2*["**"]+["NS"])                   # Cohen's d=[0.04, 0.26, 3.1, 0.8]
-add_stat(ax4, eff_size={'ES':r'$A_w$', 'values':[0.31, 0.3, 0.1, 0.36]}, sign=4*["**"], x=[.12, .37, .62, .87], y=4*[.955])                                  # Cohen's d=[1.4, 2., 47., 10.]
-
+add_stat(ax1, eff_size={'ES':r'$CLES$', 'values':[0.48, 0.31, 0.3, 0.1, 0.36]}, sign=["NS"]+4*["**"], y=2*[.59]+3*[.955])                   # Cohen's d=[1.4, 2., 47., 10.]
+add_stat(ax4, eff_size={'ES':r'$CLES$', 'values':[0.48, 0.49, 0.38, 0.13, 0.46]}, sign=2*["NS"]+2*["**"]+["NS"])                                     # Cohen's d=[0.6, 1.2, 14., 5.2]
+add_stat(ax6, eff_size={'ES':r'$CLES$', 'values':[0.48, 0.48, 0.47, 0.45, 0.5]}, sign=5*["**"])                   # Cohen's d=[0.04, 0.26, 3.1, 0.8]
+add_stat(ax2, eff_size={'ES':r'$CLES$', 'values':[0.31, 0.3, 0.1, 0.36]}, sign=4*["**"], x=[.12, .37, .62, .87], y=4*[.955])                                  # Cohen's d=[1.4, 2., 47., 10.]
+add_stat(ax3, eff_size={'ES':r'$CLES$', 'values':[0.48, 0.5, 0.41, 0.39, 0.49]}, sign=5*["**"])    
 
 if save:
     print('\n------------------------------------ export figure:')

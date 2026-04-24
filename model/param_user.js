@@ -36,6 +36,7 @@
 //                               -- wave celerity c>=0 (µm/s)
 //                               -- initial phase phi0 (unitless) (commun for the two directions)
 //                               -- rate of angle change w (1/µm^2) 
+//                               -- window of the curve (µm)
 //                               
 // 'snake_sinus': 
 //                               -- index: 4
@@ -46,16 +47,16 @@
 //                               -- wave celerity c>=0 (µm/s)
 //                               -- initial phase phi0 (unitless) (commun for the two directions)
 
-let surface_title='convr_sinus';
+let surface_title='right_sinus';
 
 let a=10.0;
 let lambda=20.0;
-let c=0.4;
+let c=2.0;
 let phi0=0.0;
 
-let w=0.01;
-let psi0=5.0;//-Math.PI/2.0; ;//50.0;// //-Math.PI/2.0;//Math.PI/4.0;
-let angleParams=[];     //[[Math.PI/4.0, w, 60.0]];
+let w=0.0;
+let psi0=-Math.PI/2.0; 
+let angleParams=[];
 let as = 1.25; 
 let lambdas=40.0;
 
@@ -66,7 +67,7 @@ let lambdas=40.0;
 //-------------------------------------------------------------------------------------------------------
 
 // number of cells
-let nbCell=300;
+let nbCell=1;
 
 // central metric     median  /  mean
 let central_metric = 'mean';
@@ -79,10 +80,10 @@ let curv_assumption=true;
 //-------------------------------------------------------------------------------------------------------
 
 // trajectory sample (seconds)
-let dt_mesure=1.0;
+let dt_mesure=0.01;
 
 // simulation is stopped when the window is closed. Tmax is the duration in seconds of the trajectories recording. 1200s=20min
-let Tmax=600.0;
+let Tmax=10.0;
 
 
 // IV. Others
@@ -93,7 +94,7 @@ let data=true;
 let file_name_data = 'data';
 
 // draw 
-let draw_cells=true;
+let draw_cells=false;
 let draw_traj = false;   // deprecated if nbCell>5
 
 // record screenshot video
