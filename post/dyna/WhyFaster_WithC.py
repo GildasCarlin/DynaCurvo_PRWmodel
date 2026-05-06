@@ -27,8 +27,8 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 #                                                    Open figure
 # ================================================================================================================
 # ================================================================================================================
-NbLignes, NbColonnes=4, 4
-Largeur, Hauteur = 23, 20
+NbLignes, NbColonnes=3, 2
+Largeur, Hauteur = 13, 15
 Largeur_ins, Hauteur_ins = 1.1, 1.1
 fig1 = plt.figure(num="test_on_speed", figsize=(Largeur, Hauteur), constrained_layout=True)
 gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
@@ -40,25 +40,23 @@ plt.rcParams.update({"font.size": 15})
 # other stats
 ax1 = fig1.add_subplot(gs1[0, 0])
 ax2 = fig1.add_subplot(gs1[0, 1])
-ax3 = fig1.add_subplot(gs1[0, 2])
-ax4 = fig1.add_subplot(gs1[0, 3])
-ax5 = fig1.add_subplot(gs1[1, 0])
-ax6 = fig1.add_subplot(gs1[1, 1])
-ax7 = fig1.add_subplot(gs1[1, 2])
+ax3 = fig1.add_subplot(gs1[1, 0])
+ax4 = fig1.add_subplot(gs1[1, 1])
+ax5 = fig1.add_subplot(gs1[2, 0])
+ax6 = fig1.add_subplot(gs1[2, 1])
+
 
 ## add labels
 def add_label(ax, txt, x=-0.05, y=1.15):
     ax.text(x, y, txt, transform=ax.transAxes, fontsize=20, fontweight="bold", va="top", ha="right")
 #
 
-#add_label(ax1_NDSC, "A", y=1.1)
-#add_label(ax2_NDSC, "B", y=1.1)
-#add_label(ax3_NDSC, "C")
-#add_label(ax4_NDSC, "D")
-#add_label(ax1, "E")
-#add_label(ax2, "F")
-#add_label(ax3, "G")
-#add_label(ax4, "H")
+add_label(ax1, "A")
+add_label(ax2, "B")
+add_label(ax3, "C")
+add_label(ax4, "D")
+add_label(ax5, "E")
+add_label(ax6, "F")
 
 
 # ================================================================================================================
@@ -112,7 +110,7 @@ bary_palette=["#3F2773", "#1F9E89", "#F2D027"]
 # figure
 show=False
 save=True
-path_to_save=os.path.join(os.getcwd(), substrate_regime, "test.svg")
+path_to_save=os.path.join(os.getcwd(), substrate_regime, "Speed_and_Dt.svg")
 
 # ================================================================================================================
 # ================================================================================================================
@@ -340,7 +338,7 @@ def getDx(df, globaldf):
 #
 
 def computeCellVelocity(metadf, df, check_unity=False, report=False):
-    dt=metadata["Time Interval"]
+    dt=metadf["Time Interval"]
     
     pos0 = df.columns.get_loc("z")
 
@@ -367,12 +365,13 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
 
 
     k=2.*np.pi/metadf["Wavelength"]
-    df.insert(pos0+8, "zSub", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"]+dt)))
-    df.insert(pos0+9, "VzSub", (df["zSub"] - df["z"])/dt)
+    df.insert(pos0+8, "zSub", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"]-dt)))
+    df.insert(pos0+9, "VzSub", (df["z"] - df["zSub"])/dt)
     df.insert(pos0+10, "VzCorr", df["Vz"] - df["VzSub"])
     df.insert(pos0+11, "speedCorr", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCorr"].pow(2)).pow(.5))
     df.insert(pos0+12, "speedSub", df["VzSub"].pow(2).pow(.5))
     df.insert(pos0+13, "VzAna", -metadf["Amplitude"]*k*metadf["Wave Celerity"]*np.cos(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"])))
+    df.insert(pos0+14, "ZAna", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"])))
 
     if check_unity:
         df.insert(pos0+12, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
@@ -390,7 +389,7 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
 
 def getSpeed(metadf, df, c="speed"):
 
-    Speed = df[["time","z", "Vx", "Vy", "Vz", "VzCorr", "VzSub", "zSub", "VzAna"]].copy()
+    Speed = df[["time","z", "Vx", "Vy", "Vz", "VzCorr", "VzSub", "zSub", "VzAna", "ZAna"]].copy()
     Speed.insert(0, 'celerity', metadf['Wave Celerity'])
     Speed.insert(0, 'wavelength', int(metadf['Wavelength']))
 
@@ -428,12 +427,14 @@ def plotDist(metadf, df, stat, ax, plot_legend=True, marker=None):
 
     # PLOT
     # -------------------
-    spec={"Vx":(r'$v^{obs}_x$ (µm/s)', "o"),
-            "Vy":(r'$v^{obs}_y$ (µm/s)', "o"),
-            "Vz":("", "o"),
-            "VzSub":("", "s"),
-            "VzAna":(r'$v^{obs}_z$ vs. $v^{sub,obs}_{z}$ vs. $v^{sub,th}_{z}$ (µm/s)', "x"),
-            "VzCorr":(r'$v^{cell}_z$ (µm/s)', "o")
+    spec={"Vx":(r'$v^{obs}_x$ (µm/s) for $\Delta t=1$s', "o"),
+          "Vy":(r'$v^{obs}_y$ (µm/s) for $\Delta t=1$s', "o"),
+          "Vz":("", "o"),
+          "VzSub":("", "x"),
+          "VzAna":(r'Vertical velocity (µm/s)', "x"),
+          "VzCorr":(r'$v^{cell}_z$ (µm/s)', "o"),
+            "z":("", "o"),
+            "ZAna":("$h$ (µm)", "o")
     }
 
     C={0.1:'steelblue',
@@ -441,12 +442,12 @@ def plotDist(metadf, df, stat, ax, plot_legend=True, marker=None):
        1.0:"forestgreen"
     }
 
-    if stat in ["VzAna"]:
+    if stat in ["VzAna", "ZAna"]:
         sns.lineplot(data=df,
                      x="time",
                      y=stat,
                      legend=False,
-                     color=C[dt],
+                     color="grey", #C[dt],
                      ax=ax,
                      )
     else:
@@ -457,7 +458,8 @@ def plotDist(metadf, df, stat, ax, plot_legend=True, marker=None):
                     color=C[dt],
                     marker=spec[stat][1],
                     ax=ax,
-                    label=dt
+                    label=dt,
+                    linewidths=0
                     )
     
 
@@ -467,14 +469,7 @@ def plotDist(metadf, df, stat, ax, plot_legend=True, marker=None):
     ax.set_xlabel("t (s)")
     if plot_legend:
         handles, labels = plt.gca().get_legend_handles_labels()
-        point1 = Line2D([0], [0], label=r'$v^{obs}_z$', marker='o', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
-        point2 = Line2D([0], [0], label=r'$v^{sub,obs}_z$', marker='s', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
-        point3 = Line2D([0], [0], label=r'$v^{sub,th}_z$', marker='', markersize=10, markerfacecolor='black', linestyle='-', color="black", markeredgecolor='white')
-        mpatch1 = mpatches.Patch(facecolor='forestgreen', label=r"$\Delta t=1$s", edgecolor='black')
-        mpatch2 = mpatches.Patch(facecolor='steelblue', label=r"$\Delta t=0.1$s", edgecolor='black')
-        mpatch3 = mpatches.Patch(facecolor='orangered', label=r"$\Delta t=0.01$s", edgecolor='black')
-        handles.extend([point1, point2, point3, mpatch1, mpatch2, mpatch3])
-
+        getLegendHandles(stat, handles)
         ax.legend(handles=handles, fontsize=15)
         ax.tick_params(axis='both', which='major', labelsize=20)
     #
@@ -493,6 +488,38 @@ def plotError(metadf, df, ax):
     ax.set_yscale('log')
     ax.set_xscale('log')
 #
+
+def getLegendHandles(stat, handles):
+    if stat == "VzAna":
+        point1 = Line2D([0], [0], label=r'$v^{obs}_z$', marker='o', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
+        #point2 = Line2D([0], [0], label=r'$v^{sub,obs}_z$', marker='s', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
+        point3 = Line2D([0], [0], label=r'$v^{sub,th}_z$', marker='', markersize=10, markerfacecolor='black', linestyle='-', color="grey", markeredgecolor='white')
+        mpatch1 = mpatches.Patch(facecolor='forestgreen', label=r"$\Delta t=1$s", edgecolor='black')
+        mpatch2 = mpatches.Patch(facecolor='steelblue', label=r"$\Delta t=0.1$s", edgecolor='black')
+        mpatch3 = mpatches.Patch(facecolor='orangered', label=r"$\Delta t=0.01$s", edgecolor='black')
+        handles.extend([point1, point3, mpatch1, mpatch2, mpatch3])
+    #
+
+    if stat == "VzCorr":
+        mpatch1 = mpatches.Patch(facecolor='forestgreen', label=r"$\Delta t=1$s", edgecolor='black')
+        mpatch2 = mpatches.Patch(facecolor='steelblue', label=r"$\Delta t=0.1$s", edgecolor='black')
+        mpatch3 = mpatches.Patch(facecolor='orangered', label=r"$\Delta t=0.01$s", edgecolor='black')
+        handles.extend([mpatch1, mpatch2, mpatch3])
+    #
+
+    if stat == "ZAna":
+        point1 = Line2D([0], [0], label=r'$h^{obs}$', marker='o', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
+        point3 = Line2D([0], [0], label=r'$h^{sub,th}$', marker='', markersize=10, markerfacecolor='black', linestyle='-', color="grey", markeredgecolor='white')
+        mpatch1 = mpatches.Patch(facecolor='forestgreen', label=r"$\Delta t=1$s", edgecolor='black')
+        mpatch2 = mpatches.Patch(facecolor='steelblue', label=r"$\Delta t=0.1$s", edgecolor='black')
+        mpatch3 = mpatches.Patch(facecolor='orangered', label=r"$\Delta t=0.01$s", edgecolor='black')
+        handles.extend([point1, point3, mpatch1, mpatch2, mpatch3])
+    #
+
+
+
+
+
 
 
 
@@ -536,19 +563,23 @@ for path in paths:
     summary_by_time=prepareToPlot(summary_by_time)
     summary_by_time=summary_by_time[summary_by_time['time']<=10.]
 
+    print(data[["Vz", ]])
+    
     # plot
-    plotError(metadata, summary_by_time, ax=ax5)
+    plotError(metadata, summary_by_time, ax=ax6)
     if dt==0.05:
         continue
 
     if dt==1.:
-        plotDist(metadata, summary_by_time, stat="Vx", ax=ax1)
-        plotDist(metadata, summary_by_time, stat="Vy", ax=ax2)
+        plotDist(metadata, summary_by_time, stat="Vx", ax=ax2, plot_legend=False)
+        plotDist(metadata, summary_by_time, stat="Vy", ax=ax3, plot_legend=False)
     
-    plotDist(metadata, summary_by_time, stat="Vz", ax=ax3)
-    plotDist(metadata, summary_by_time, stat="VzSub", ax=ax3, plot_legend=False)
-    plotDist(metadata, summary_by_time, stat="VzAna", ax=ax3)
-    plotDist(metadata, summary_by_time, stat="VzCorr", ax=ax4)
+    plotDist(metadata, summary_by_time, stat="Vz", ax=ax4, plot_legend=False)
+    #plotDist(metadata, summary_by_time, stat="VzSub", ax=ax4, plot_legend=False)
+    plotDist(metadata, summary_by_time, stat="VzAna", ax=ax4)
+    plotDist(metadata, summary_by_time, stat="VzCorr", ax=ax5)
+    plotDist(metadata, summary_by_time, stat="z", ax=ax1)
+    plotDist(metadata, summary_by_time, stat="ZAna", ax=ax1)
 
     
 

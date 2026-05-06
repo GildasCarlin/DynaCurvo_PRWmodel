@@ -115,7 +115,7 @@ def get_last_point(metadf, df):
 #
 
 def computeCellVelocity(metadf, df, check_unity=False, report=False):
-    dt=metadata["Time Interval"]
+    dt=metadf["Time Interval"]
     
     pos0 = df.columns.get_loc("z")
 

@@ -107,7 +107,7 @@ class Cell {
     );
 
     //-------------------------------------------- velocity integration to get cell position
-    this.position.add(this.velocity.copy().mult(dt*0.0));
+    this.position.add(this.velocity.copy().mult(dt));
   }
   
   // Intermediate functions

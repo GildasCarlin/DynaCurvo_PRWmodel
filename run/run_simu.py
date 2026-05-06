@@ -22,12 +22,12 @@ import numpy as np
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="SpeedDistribution"
+study="Other_surfaces"
 
 # conditions in the study
 Assumptions=["DSC", "NDSC"]
 Lambdas=[20.0]
-celerities=[0.0, 0.1, 0.4, 0.6, 2.0]
+celerities=[0.5]
 max_c, min_c = 0., 4.0
 c_step=.1
 

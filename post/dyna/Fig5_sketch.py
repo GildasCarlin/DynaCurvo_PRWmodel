@@ -65,14 +65,18 @@ def add_label(ax, txt, x=-0.05, y=1.15):
     ax.text(x, y, txt, transform=ax.transAxes, fontsize=20, fontweight="bold", va="top", ha="right")
 #
 
-add_label(ax1_NDSC, "A", y=1.1)
-add_label(ax2_NDSC, "B", y=1.1)
-add_label(ax3_NDSC, "C")
-add_label(ax4_NDSC, "D")
-add_label(ax1, "E")
-add_label(ax2, "F")
-add_label(ax3, "G")
-#add_label(ax4, "H")
+add_label(ax1_NDSC, "A.1")
+add_label(ax2_NDSC, "A.2")
+add_label(ax3_NDSC, "A.3")
+add_label(ax4_NDSC, "A.4")
+add_label(ax1_DSC, "B.1")
+add_label(ax2_DSC, "B.2")
+add_label(ax3_DSC, "B.3")
+add_label(ax4_DSC, "B.4")
+add_label(ax1, "D")
+add_label(ax2, "E")
+add_label(ax3, "F")
+add_label(ax5_NDSC, "C")
 
 
 # ================================================================================================================
@@ -83,7 +87,7 @@ add_label(ax3, "G")
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="Other_surfaces"
+study="test"
 
 # assets
 root=os.getcwd()
@@ -91,7 +95,7 @@ path_to_assets=os.path.join(root, substrate_regime, "assets", study)
 
 ## list of wave celerity
 celerities = [0.0, 0.5]
-regimes = ["Static", "NDSC", "DSC"]
+regimes = ["Static", "DSC(-)", "DSC(+)"]
 
 # list of surfaces
 surfaces=["converging_sinus", "diverging_sinus", "Snake_sinus", "wells", "rotation"]
@@ -144,7 +148,7 @@ def searchFilesToAnalyse(root):
 #
 
 def getAssumption(metadf):
-    mapping={0:"NDSC", 1:"DSC"}
+    mapping={0:"DSC(-)", 1:"DSC(+)"}
     return mapping[metadf["surf_assumption"]]
 #
 
@@ -194,13 +198,15 @@ def formatTrajectories(df, center=True, convert=True):
         df[['x', 'y']] -= df.groupby('cell')[['x', 'y']].transform('first')
 
     # P5.js frame vs python frame: the y-axis is reversed
-    data['y'] *= -1.0
+    df['y'] *= -1.0
 
     # convert µm to mm
     if convert:
-        pos0 = data.columns.get_loc("x")
-        data.insert(pos0, "X", data["x"]/1000.)
-        data.insert(pos0+1, "Y", data["y"]/1000.)       
+        pos0 = df.columns.get_loc("x")
+        df.insert(pos0, "X", df["x"]/1000.)
+        df.insert(pos0+1, "Y", df["y"]/1000.)    
+
+    return df   
 #
 
 def plotTrajectories(metadf, df, mapping, xticks=[-.8, 0., .8], yticks=[-.8, 0., .8], N=30, centered=True):
@@ -247,6 +253,35 @@ def plotTrajectories(metadf, df, mapping, xticks=[-.8, 0., .8], yticks=[-.8, 0.,
     else:
         rect=mpatches.Rectangle([-0.2, -0.2], width=0.4, height=0.4, ec='deeppink', ls="--", alpha=1., fill=0, lw=4, zorder=2)
         ax.add_patch(rect)
+    
+    if ax == ax1_NDSC:
+        ax.text(-.25, .5, 
+                r"DSC(-) cells", 
+                rotation = 'vertical', fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
+                )
+        #
+        
+        ax.arrow(0.1, .3, 0., 0.4, width=.04, head_length=.1, color='red', transform=ax.transAxes, length_includes_head=True)
+        ax.text(0.18, 0.5, 
+                r"Wave propagation",
+                color='red', rotation = 'vertical', fontsize=15, fontweight='bold', va='center', ha='center', transform=ax.transAxes
+                )
+        #
+
+
+    if ax == ax1_DSC:
+        ax.text(-.25, .5, 
+                r"DSC(+) cells", 
+                rotation = 'vertical', fontsize=20, fontweight='bold', va='center', ha='center', transform=ax.transAxes
+                )
+        #
+
+        ax.arrow(0.1, .3, 0., 0.4, width=.04, head_length=.1, color='red', transform=ax.transAxes, length_includes_head=True)
+        ax.text(0.18, 0.5, 
+                r"Wave propagation",
+                color='red', rotation = 'vertical', fontsize=15, fontweight='bold', va='center', ha='center', transform=ax.transAxes
+                )
+        #
 #
 
 def plotBarycenters(metadf, df, mapping, Timer=[10, 40, 80], plot_legend=False, xticks=[-.8, 0., .8], yticks=[-.8, 0., .8], palette=bary_palette):
@@ -347,48 +382,70 @@ def getDx(df, globaldf):
     return globaldf
 #
 
-def computeCellVelocity(df, dt=15., check_unity=False, report=False):
+def computeCellVelocity(metadf, df, check_unity=False, report=False):
+    print(df.head())
+    dt=metadf["Time Interval"]
+    
     pos0 = df.columns.get_loc("z")
 
-    ## dx and dy
+    ## FIRST: the cell velocity is computed in the external fixed frame
+    ##  v=(r(t_{i+1})-r(t_i) )/Delta t
+    
+    ## displacement components in the external fixed frame
     diff_result = df.groupby("cell")[["x", "y", "z"]].diff()
     df.insert(pos0+1, "Dx", diff_result["x"])
     df.insert(pos0+2, "Dy", diff_result["y"])
     df.insert(pos0+3, "Dz", diff_result["z"])
 
-    # vx=dx/dt and vy
+    # velocity components in the external fixed frame
     df.insert(pos0+4, "Vx", diff_result["x"]/dt)
     df.insert(pos0+5, "Vy", diff_result["y"]/dt)
     df.insert(pos0+6, "Vz", diff_result["z"]/dt)
     df = df.dropna().reset_index(drop=True)
 
-    # speed=sqrt(vx^2+vy^2++vz^2)
+    # speed=sqrt(vx^2+vy^2++vz^2) of the cell in the external fixed frame
     df.insert(pos0+7, "speed", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
 
-    # normalized velocity vx_hat=vx/speed
-    df.insert(pos0+8, "Vx_hat", df["Vx"]/df["speed"])
-    df.insert(pos0+9, "Vy_hat", df["Vy"]/df["speed"])
-    df.insert(pos0+10, "Vz_hat", df["Vz"]/df["speed"])
+    print(df.head())
 
-    # plane speed=sqrt(vx^2+vy^2)
-    df.insert(pos0+11, "speed2D", (df["Vx"].pow(2) + df["Vy"].pow(2)).pow(.5))
+    ## SECOND: the cell velocity is computed in the frame attached to surface but parallel to the external fixed frame
+    ## v=(r(t_{i+1})-r(t_i) )/Delta t - (0, 0, h(x(t_i), t_{i+1}) - h(x(t_i), t_{i}))/Delta t
 
-    # plane distance=sqrt(dx^2+dy^2)
-    df.insert(pos0+12, "distance2D", (df["Dx"].pow(2) + df["Dy"].pow(2)).pow(.5))
+    df.insert(pos0+8, "zSub", computeZPosition(metadf, df))
+    df.insert(pos0+9, "VzSub", (df["zSub"].copy() - df["z"]).copy()/dt)
+    df.insert(pos0+10, "VzCorr", df["Vz"].copy() - df["VzSub"].copy())
+    df.insert(pos0+11, "speedCorr", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCorr"].pow(2)).pow(.5)) ## cell speed corrected 
+    df.insert(pos0+12, "speedSub", df["VzSub"].pow(2).pow(.5))
 
     if check_unity:
-        df.insert(pos0+13, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
+        df.insert(pos0+12, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
+        # normalized velocity vx_hat=vx/speed
+        df.insert(pos0+13, "Vx_hat", df["Vx"]/df["speed"])
+        df.insert(pos0+14, "Vy_hat", df["Vy"]/df["speed"])
+        df.insert(pos0+15, "Vz_hat", df["Vz"]/df["speed"])
 
     if report:
         print("\n-- report on velocity")
-        print(df[["Dx", "Dy", "Dz", "Vx", "Vy", "Vz", "speed", "speed2D"]].describe(), "\n")
+        print(df[["Dx", "Dy", "Dz", "Vx", "Vy", "Vz", "z", "zSub", "speedCorr"]].head(), "\n")
 
     return df
 #
 
-def getSpeed(metadf, df, c="speed"):
+def computeZPosition(metadf, df):
 
-    Speed=df[[c]].copy()
+    k=2.*np.pi/metadf["Wavelength"]
+
+    if metadf["Surface"]=="right_sinus":
+        return metadf["Amplitude"]*np.sin(k*df["y"].copy() - k*metadf["Wave Celerity"]*(df["time"]+metadf["Time Interval"]))
+    
+    if metadf["Surface"]=="wells_sinus":
+    
+
+
+
+def getSpeed(metadf, df, cl="speedCorr"):
+
+    Speed=df[[cl]].copy()
 
     Speed.insert(0, "celerity", metadf["Wave Celerity"])
     Speed.insert(0, "pattern", metadf["Surface"])
@@ -409,11 +466,11 @@ def prepareToPlot(df):
     df.drop("sign", axis=1, inplace=True)
 
     # defines regime 
-    labels={"NDSC":"Static"}
+    labels={"DSC(-)":"Static"}
     pos0 = df.columns.get_loc("celerity")
 
     df.insert(pos0+1, "regime", df["assumption"])
-    df.loc[(df["celerity"] == 0.0) & (df["assumption"]=="NDSC"), "regime"] = "Static"
+    df.loc[(df["celerity"] == 0.0) & (df["assumption"]=="DSC(-)"), "regime"] = "Static"
 
     return df
 #
@@ -423,7 +480,7 @@ def plotDist(df, stat, ax, palette=rege_palette, whis=1.5, plot_legend=True, hue
     # specify options
     # --------------------------
     if stat=="dx":
-        infos={'y_label1':r'$D_{\perp}$'}
+        infos={'y_label1':r'$D_{\mathbf{k}}$'}
 
         ## dx=0.5 ==> no bias
         ax.axhline(y=.5, linewidth = 2, color='#8C0335', linestyle='--')
@@ -431,16 +488,16 @@ def plotDist(df, stat, ax, palette=rege_palette, whis=1.5, plot_legend=True, hue
         ax.set_ylim(bottom=0., top=1.)
     #
         
-    if stat=='speed':
-        infos={'y_label1':'Cell speed (µm/s)'}
-        ax.set_ylim(bottom=0., top=3.)
+    if stat=='speedCorr':
+        infos={'y_label1':r'Cell speed $|| \mathbf{v} ||_2$ (µm/s)'}
+        #ax.set_ylim(bottom=0., top=3.)
 
     if stat=='speed2D':
         infos={'y_label1':'Apparent cell speed (µm/s)'}
         #ax.set_ylim(bottom=0., top=3.)
     
     if stat=="last_y":
-        infos={'y_label1':"Cell position\n at "+"$T$=20min (mm)"}
+        infos={'y_label1':r"$B_T$"+" at "+r'$T$=20min (mm)'}
         ax.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--')
         ax.set_ylim(bottom=-1., top=1.)
     #
@@ -499,20 +556,25 @@ for surface in surfaces:
 
     # filters the selected celerities
     paths=[path for path in paths if float(re.findall(r"c=(\d*\.?\d*)", path)[0]) in celerities]
+    paths_Zspeed=[path for path in paths if "Zspeed" in path]
+    paths=[path for path in paths if "Zspeed" not in path]
+
 
     # each simulation is treated independantly
     for path in paths:
         metadata, data=loadTrajectoryData(path)
+        surf, c=metadata["Surface"], metadata["Wave Celerity"]
 
-        print("\nCurrent treated data:")
-        print("surface:", metadata["Surface"], "   Wave celerity (µm/s)", metadata["Wave Celerity"], "   Assumption", getAssumption(metadata), "\n")
+        print("\n----------------------------------------------------------")
+        print("Current treated data:")
+        print("surface:", surf, "   Wave celerity (µm/s)", c, "   Assumption", getAssumption(metadata), "\n")
 
         # format trajectories
         print("... format trajectories")
-        formatTrajectories(data, convert=True)
+        data=formatTrajectories(data, convert=True)
 
         # plot trajectories and surface pattern
-        if metadata["Wave Celerity"] in [0.5]:
+        if c in [.5]:
             print("... trajectories plotting")
             plotTrajectories(metadf=metadata, df=data, mapping=traj_mapping, N=30)
             plotPattern(metadf=metadata, path=os.path.join(working_folder, "pattern.jpg"), mapping=patt_mapping)
@@ -525,10 +587,16 @@ for surface in surfaces:
         summary_by_cell_local=getDx(data, summary_by_cell_local)
         list1.append(summary_by_cell_local)
 
-        print("... compute time-statistics")
-        data=computeCellVelocity(data, report=False)
-        summary_by_time_local=getSpeed(metadata, data, c="speed")
-        list2.append(summary_by_time_local)
+        if surf not in ["right_sinus"]:
+            # open file for the speed computation
+            print("... format trajectories --- Zspeed")
+            metadataZ, dataZ=loadTrajectoryData(re.sub(rf"c={c}", rf"c={c}_Zspeed", path))
+            dataZ=formatTrajectories(dataZ, convert=False, center=False)
+        
+            print("... compute time-statistics")
+            dataZ=computeCellVelocity(metadataZ, dataZ, report=False)
+            summary_by_time_local=getSpeed(metadataZ, dataZ, cl="speedCorr")
+            list2.append(summary_by_time_local)
     #
 #
 
@@ -536,8 +604,8 @@ summary_by_cell_global=pd.concat(list1, ignore_index=True)
 summary_by_time_global=pd.concat(list2, ignore_index=True)
 
 
-print("\n--------------------------------------------\n")
-print("\n ... plot statistics")
+print("\n\n--------------------------------------------")
+print("... plot statistics")
 
 # format to plot
 summary_by_cell_global=prepareToPlot(summary_by_cell_global)
@@ -553,7 +621,7 @@ summary_by_time_to_plot=summary_by_time_to_plot[summary_by_time_to_plot["pattern
 # plots
 plotDist(summary_by_cell_to_plot, stat="last_y", ax=ax1, whis=1.5, plot_legend=True)
 plotDist(summary_by_cell_to_plot, stat="dx", ax=ax2, whis=1.5, plot_legend=True)
-plotDist(summary_by_time_to_plot, stat="speed", ax=ax3, whis=3., plot_legend=True)
+plotDist(summary_by_time_to_plot, stat="speedCorr", ax=ax3, whis=1.5, plot_legend=True) # .copy().sample(frac=1.)
 
 
 

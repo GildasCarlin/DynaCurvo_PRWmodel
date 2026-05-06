@@ -283,15 +283,14 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True, hue='a
         "speedCorr":r'Cell speed $|| \mathbf{v} ||_2$ (µm/s)',
         "VzSub":'Substrate vertical velocity (µm/s)',
         "r_d":r'$f$',
-        "last_y":r"$\mathbf{r}(t=T)\cdot \mathbf{\hat{k}}$"+" at "+r'$T$=20min (mm)'
+        "last_y":r"$B_T$"+" at "+r'$T$=20min (mm)'
         }
     ax1.set_ylabel(YLabel[quantity], fontsize=25)
     ax1.set_xlabel(r'Wave celerity (µm/s)', fontsize=25)
     ax1.tick_params(axis='both', which='major', labelsize=20) 
     if plot_legend:
         ax1.legend(fontsize=30, title='Assumption', title_fontsize=32, loc = "best")
-    #
-       
+    #  
 #
 
 def add_stat(ax, eff_size, sign=5*['**'], x=[.1, .3, .5, .7, .9], y=5*[.955], size=0.1):
