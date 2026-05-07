@@ -90,7 +90,7 @@ def get_Dx(metadata, data):
 
 def get_vd(metadata, data):
 
-    df = data[["speed", "speedCorr", "VzSub"]].copy()
+    df = data[["speedObs", "speedCell", "VzSub"]].copy()
     df.insert(0, 'celerity', metadata['Wave Celerity'])
     df.insert(0, 'wavelength', int(metadata['Wavelength']))
     return df
@@ -129,30 +129,34 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
     df.insert(pos0+3, "Dz", diff_result["z"])
 
     # velocity components in the external fixed frame
-    df.insert(pos0+4, "Vx", diff_result["x"]/dt)
-    df.insert(pos0+5, "Vy", diff_result["y"]/dt)
-    df.insert(pos0+6, "Vz", diff_result["z"]/dt)
-    df = df.dropna().reset_index(drop=True)
+    df.insert(pos0+4, "Vx", df["Dx"]/dt)
+    df.insert(pos0+5, "Vy", df["Dy"]/dt)
+    df.insert(pos0+6, "Vz", df["Dz"]/dt)
 
     # speed=sqrt(vx^2+vy^2++vz^2) of the cell in the external fixed frame
-    df.insert(pos0+7, "speed", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
+    df.insert(pos0+7, "speedObs", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
 
     ## SECOND: the cell velocity is computed in the frame attached to surface but parallel to the external fixed frame
     ## v=(r(t_{i+1})-r(t_i) )/Delta t - (0, 0, h(x(t_i), t_{i+1}) - h(x(t_i), t_{i}))/Delta t
 
     k=2.*np.pi/metadf["Wavelength"]
-    df.insert(pos0+8, "zSub", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"]+dt)))
-    df.insert(pos0+9, "VzSub", (df["zSub"] - df["z"])/dt)
-    df.insert(pos0+10, "VzCorr", df["Vz"] - df["VzSub"])
-    df.insert(pos0+11, "speedCorr", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCorr"].pow(2)).pow(.5))
+    # theoretical height at the y-position at time t-Dt 
+    df.insert(pos0+8, "ZAna_tmDt", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"]-dt)))
+    
+    # numerical substrate vertical velocity at time t. The vertical cell velocity is deduced.
+    df.insert(pos0+9, "VzSub", (df["z"]-df["ZAna_tmDt"])/dt)
+    df.insert(pos0+10, "VzCell", df["Vz"]-df["VzSub"])
+    df.insert(pos0+11, "speedCell", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCell"].pow(2)).pow(.5))
     df.insert(pos0+12, "speedSub", df["VzSub"].pow(2).pow(.5))
 
+    df = df.dropna().reset_index(drop=True)
+
     if check_unity:
-        df.insert(pos0+12, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
+        df.insert(pos0+13, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
         # normalized velocity vx_hat=vx/speed
-        df.insert(pos0+13, "Vx_hat", df["Vx"]/df["speed"])
-        df.insert(pos0+14, "Vy_hat", df["Vy"]/df["speed"])
-        df.insert(pos0+15, "Vz_hat", df["Vz"]/df["speed"])
+        df.insert(pos0+14, "Vx_hat", df["Vx"]/df["speed"])
+        df.insert(pos0+15, "Vy_hat", df["Vy"]/df["speed"])
+        df.insert(pos0+16, "Vz_hat", df["Vz"]/df["speed"])
 
     if report:
         print("\n-- report on velocity")

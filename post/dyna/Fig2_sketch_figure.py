@@ -261,10 +261,10 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True, hue='a
         ax1.scatter(X, Y, marker="x", s=400, linewidth=2, color="red", zorder=10)
         ax1.scatter(X, [-1.*v for v in Y], marker="x", s=400, linewidth=2, color="red", zorder=10)
         
-    if quantity in ["speed"]:
+    if quantity in ["speedObs"]:
         ax1.set_ylim(bottom=-.1, top=9.)
     
-    if quantity in ["speedCorr"]:
+    if quantity in ["speedCell"]:
         ax1.set_ylim(bottom=-.1, top=6.)
 
     if quantity=='r_d':
@@ -279,8 +279,8 @@ def plot_dist(data, quantity, ax1, palette, whis = 1.5, plot_legend=True, hue='a
 
     # labels fig
     YLabel={"dx":r'$D_{\mathbf{k}}$',
-        "speed":r'Cell speed $|| \mathbf{v^{obs}} ||_2$ (µm/s)',
-        "speedCorr":r'Cell speed $|| \mathbf{v} ||_2$ (µm/s)',
+        "speedObs":r'Cell speed $|| \mathbf{v^{obs}} ||_2$ (µm/s)',
+        "speedCell":r'Cell speed $|| \mathbf{v} ||_2$ (µm/s)',
         "VzSub":'Substrate vertical velocity (µm/s)',
         "r_d":r'$f$',
         "last_y":r"$B_T$"+" at "+r'$T$=20min (mm)'
@@ -472,7 +472,7 @@ plot_dist(data=       all_dx,
 
 print('---------------------- plot vd')
 plot_dist(data=       all_vd.copy().sample(frac=0.03), 
-          quantity=   'speed', 
+          quantity=   'speedObs', 
           ax1=        ax3, 
           palette=    palette_for_assumption,
           whis=       3.,
@@ -480,7 +480,7 @@ plot_dist(data=       all_vd.copy().sample(frac=0.03),
           )
 
 print('---------------------- plot substrate speed')
-plot_dist(data=       all_vd[all_vd["assumption"]=="DSC(-)"].copy().sample(frac=0.03),#all_vd.copy().sample(frac=0.03),   #
+plot_dist(data=       all_vd[all_vd["assumption"]=="DSC(-)"].copy().sample(frac=0.03),
           quantity=   'VzSub', 
           ax1=        ax5,
           palette=    None,
@@ -492,7 +492,7 @@ plot_dist(data=       all_vd[all_vd["assumption"]=="DSC(-)"].copy().sample(frac=
 
 print('---------------------- plot cell speed')
 plot_dist(data=       all_vd.copy().sample(frac=0.03), 
-          quantity=   'speedCorr', 
+          quantity=   'speedCell',
           ax1=        ax6, 
           palette=    palette_for_assumption,
           whis=       3.,

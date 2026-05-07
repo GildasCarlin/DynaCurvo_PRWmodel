@@ -136,11 +136,11 @@ def formatData(df_last, df_dx, df_vd, wavelengths=[20., 40., 80.], max_celerity=
     df_dx.dropna(inplace=True)
     df_dx[['dx.mean', 'dx.med', 'dx.std']]=df_dx[['dx.mean', 'dx.med', 'dx.std']].astype("float")
 
-    df_vd.rename(columns={"speed":"vd.mean",
-                            "speed.1":"vd.med",
-                            "speed.2":"vd.std"}, inplace=True)
+    df_vd.rename(columns={"speedCell":"vdCell.mean",
+                          "speedCell.1":"vdCell.med",
+                          "speedCell.2":"vdCell.std"}, inplace=True)
     df_vd.dropna(inplace=True)
-    df_vd[['vd.mean', 'vd.med', 'vd.std']]=df_vd[['vd.mean', 'vd.med', 'vd.std']].astype("float")
+    df_vd[['vdCell.mean', 'vdCell.med', 'vdCell.std']]=df_vd[['vdCell.mean', 'vdCell.med', 'vdCell.std']].astype("float")
 
     ## isolate only the specified wavelength
     print('... sort by wavelength and celerity')
@@ -163,11 +163,12 @@ def searchForCsat(df_last, df_dx, df_vd, wavelengths=[20., 40., 80.], Vmax=[.61,
     print('------------------------------------ extract max/min')
     critic_c_last = df_last.loc[df_last.groupby("wavelength")["last_y.mean"].idxmax(), ["wavelength", "celerity", "last_y.mean"]].reset_index(drop=True)
     critic_c_dx =   df_dx.loc[df_dx.groupby("wavelength")["dx.mean"].idxmin(), ["wavelength", "celerity", "dx.mean"]].reset_index(drop=True)
-    critic_c_vd =   df_vd.loc[df_vd.groupby("wavelength")["vd.mean"].idxmax(), ["wavelength", "celerity", "vd.mean"]].reset_index(drop=True)
+    critic_c_vd =   df_vd.loc[df_vd.groupby("wavelength")["vdCell.mean"].idxmax(), ["wavelength", "celerity", "vdCell.mean"]].reset_index(drop=True)
 
     critic_c_last.insert(0, 'Vmax', Vmax)
     critic_c_dx.insert(0, 'Vmax', Vmax)
     critic_c_vd.insert(0, 'Vmax', Vmax)
+    
     critic_c_last.insert(0, 'assumption', len(critic_c_last)*[assumption])
     critic_c_dx.insert(0, 'assumption',len(critic_c_dx)*[assumption])
     critic_c_vd.insert(0, 'assumption', len(critic_c_vd)*[assumption])
@@ -193,9 +194,11 @@ def plotCentralStat(ass,
                     zorder=10,
                     remove_ylabel=False):
     
+    name_mapping={"NDSC":"DSC(-)", "DSC":"DSC(+)"}
+    
     ##### specific option to plot depending on the statistic
     if quantity=='dx':
-        infos={'y_label':r'$\overline{D}_{\perp}$'}
+        infos={'y_label':r'$\overline{D}_{\mathbf{k}}$'}
         ax.axhline(y=.5, linewidth = 2, color='#8C0335', linestyle='--', zorder=1)
         ax.set_ylim(bottom=0., top=1.)
     #
@@ -204,7 +207,7 @@ def plotCentralStat(ass,
         ax.set_ylim(bottom=0.)
     #
     if quantity=='rd':
-        infos={'y_label':r'$\overline{r}_d$'}
+        infos={'y_label':r'$\overline{f}$'}
         ax.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--', zorder=1)
         ax.set_ylim(top=1., bottom=-0.32)
     #
@@ -212,7 +215,7 @@ def plotCentralStat(ass,
         infos={'y_label':r"$B_T$ with $T$=20min (mm)"}
         ax.set_ylim(bottom=-.05, top=.6)
         ax.text(-.25, .5, 
-                ass+r" cells", 
+                name_mapping[ass]+r" cells", 
                 rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center', transform=ax.transAxes
                 )
     #
@@ -314,6 +317,7 @@ def plotCritical(data,
                     )
     #
 
+
     ### reduce alpha of points
     #for coll in ax.collections:
     #    facecolors = coll.get_facecolors()
@@ -336,8 +340,8 @@ def plotCritical(data,
     if plot_legend:
         handles, labels = plt.gca().get_legend_handles_labels()
         point1 = Line2D([0], [0], label=th[2], markersize=10, linestyle='--', color='black', linewidth=3.)
-        point2 = Line2D([0], [0], label="DSCcells", markersize=10, marker='s', color='black', ms=15, linestyle="")
-        point3 = Line2D([0], [0], label="DSCcells,\n"+r"$\bf f_{stat}=0$", markersize=10, marker='o', color='black', ms=15, linestyle="")
+        point2 = Line2D([0], [0], label="DSC(+) cells", markersize=10, marker='s', color='black', ms=15, linestyle="")
+        point3 = Line2D([0], [0], label="DSC(+) cells,\n"+r"$\bf f_{stat}=0$", markersize=10, marker='o', color='black', ms=15, linestyle="")
         #point4 = Line2D([0], [0], label="DSCcells,\n"+r"$\bf f_{stat}=0$, $\bf \sigma=0$", markersize=10, marker='d', color='black', ms=15, linestyle="")
         ax.legend(handles=[point1, point2, point3], fontsize=20, loc="upper left")
         ax.tick_params(axis='both', which='major', labelsize=20)
@@ -361,6 +365,8 @@ csat_assets=os.path.join(root, substrate_regime, "assets", csat_study)
 csat_nonoise_assets=os.path.join(root, substrate_regime, "assets", csat_nonoise_study)
 csat_taudyna_assets=os.path.join(root, substrate_regime, "assets", csat_taudyna_study)
 mapping_path_assumption={"NDSC":NDSC_assets, "DSC":DSC_assets}
+path_to_assets=os.path.join(root, substrate_regime, "assets")
+
 
 # path to save figure
 path_to_save=os.path.join(root, substrate_regime, "wavelength_effect.svg")
@@ -372,7 +378,7 @@ for assumption in assumptions:
     print('... open data')
     data_last = pd.read_csv(mapping_path_assumption[assumption] + '\\' + 'central_last.csv')
     data_dx =   pd.read_csv(mapping_path_assumption[assumption] + '\\' + 'central_dx.csv')
-    data_vd =   pd.read_csv(mapping_path_assumption[assumption] + '\\' + 'central_vd.csv')
+    data_vd =   pd.read_csv(os.path.join(path_to_assets, assumption+"_SpeedDistribution", "central_vd.csv"))
 
     data_last, data_dx, data_vd = formatData(data_last, data_dx, data_vd)
 
@@ -417,7 +423,6 @@ df_c_vd =   pd.concat(list_c_vd, ignore_index=True)
 df_c_last = df_c_last.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
 df_c_dx = df_c_dx.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
 df_c_vd = df_c_vd.sort_values(by='Vmax', ascending=True).reset_index(drop=True)
-print(df_c_last)
 plotCritical(df_c_last, y='celerity', marker="s", ax=ax4, plot_legend=True, alpha=1., th=(True, 2.**(-1./3.), r'$w_{sat}$'))
 plotCritical(df_c_last, y='last_y.mean', marker="s", ax=ax8, plot_legend=True, alpha=1., th=(True, 2.**(2./3.)/3., r'$\max_c (s_{dyna})$'))
 

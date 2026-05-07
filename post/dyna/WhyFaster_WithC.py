@@ -352,10 +352,9 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
     df.insert(pos0+3, "Dz", diff_result["z"])
 
     # velocity components in the external fixed frame
-    df.insert(pos0+4, "Vx", diff_result["x"]/dt)
-    df.insert(pos0+5, "Vy", diff_result["y"]/dt)
-    df.insert(pos0+6, "Vz", diff_result["z"]/dt)
-    df = df.dropna().reset_index(drop=True)
+    df.insert(pos0+4, "Vx", df["Dx"]/dt)
+    df.insert(pos0+5, "Vy", df["Dy"]/dt)
+    df.insert(pos0+6, "Vz", df["Dz"]/dt)
 
     # speed=sqrt(vx^2+vy^2++vz^2) of the cell in the external fixed frame
     df.insert(pos0+7, "speed", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
@@ -363,15 +362,31 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
     ## SECOND: the cell velocity is computed in the frame attached to surface but parallel to the external fixed frame
     ## v=(r(t_{i+1})-r(t_i) )/Delta t - (0, 0, h(x(t_i), t_{i+1}) - h(x(t_i), t_{i}))/Delta t
 
-
     k=2.*np.pi/metadf["Wavelength"]
-    df.insert(pos0+8, "zSub", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"]-dt)))
-    df.insert(pos0+9, "VzSub", (df["z"] - df["zSub"])/dt)
-    df.insert(pos0+10, "VzCorr", df["Vz"] - df["VzSub"])
-    df.insert(pos0+11, "speedCorr", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCorr"].pow(2)).pow(.5))
-    df.insert(pos0+12, "speedSub", df["VzSub"].pow(2).pow(.5))
-    df.insert(pos0+13, "VzAna", -metadf["Amplitude"]*k*metadf["Wave Celerity"]*np.cos(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"])))
-    df.insert(pos0+14, "ZAna", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"])))
+    # theoretical height at the y-position at time t and t-Dt (Note: "ZAna_t"="z")
+    df.insert(pos0+8, "ZAna_tmDt", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"]-dt)))
+    df.insert(pos0+9, "ZAna_t", metadf["Amplitude"]*np.sin(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"])))
+
+    # numerical substrate vertical velocity at time t. The vertical cell velocity is deduced.
+    df.insert(pos0+10, "VzSub", (df["z"]-df["ZAna_tmDt"])/dt)
+    df.insert(pos0+11, "VzCell", df["Vz"]-df["VzSub"])
+
+    # theoretical vertical velocity of the substrate
+    df.insert(pos0+12, "VzSubAna", -metadf["Amplitude"]*k*metadf["Wave Celerity"]*np.cos(k*df["y"] - k*metadf["Wave Celerity"]*(df["time"])))
+
+    # difference between theoretical substrate velocity with numerical velocity
+    df.insert(pos0+13, "AbsError", df["VzSub"] - df["VzSubAna"])
+
+    df = df.dropna().reset_index(drop=True)
+
+
+
+
+    
+    #df.insert(pos0+11, "speedCorr", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCorr"].pow(2)).pow(.5))
+    #df.insert(pos0+12, "speedSub", df["VzSub"].pow(2).pow(.5))
+    #
+    #
 
     if check_unity:
         df.insert(pos0+12, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
@@ -389,7 +404,7 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
 
 def getSpeed(metadf, df, c="speed"):
 
-    Speed = df[["time","z", "Vx", "Vy", "Vz", "VzCorr", "VzSub", "zSub", "VzAna", "ZAna"]].copy()
+    Speed = df[["time", "Vx", "Vy", "Vz", "VzCell", "y", "z", "VzSubAna", "AbsError"]] #df[["time","z", "Vx", "Vy", "Vz", "VzCorr", "VzSub", "zSub", "VzAna", "ZAna"]].copy()
     Speed.insert(0, 'celerity', metadf['Wave Celerity'])
     Speed.insert(0, 'wavelength', int(metadf['Wavelength']))
 
@@ -431,10 +446,10 @@ def plotDist(metadf, df, stat, ax, plot_legend=True, marker=None):
           "Vy":(r'$v^{obs}_y$ (µm/s) for $\Delta t=1$s', "o"),
           "Vz":("", "o"),
           "VzSub":("", "x"),
-          "VzAna":(r'Vertical velocity (µm/s)', "x"),
-          "VzCorr":(r'$v^{cell}_z$ (µm/s)', "o"),
-            "z":("", "o"),
-            "ZAna":("$h$ (µm)", "o")
+          "VzSubAna":(r'Vertical velocity (µm/s)', "x"),
+          "AbsError":(r'$v^{sub,num}_z - v^{sub,th}_z$ (µm/s)', "o"),
+          "z":("", "o"),
+          "ZAna":("$h$ (µm)", "o")
     }
 
     C={0.1:'steelblue',
@@ -442,14 +457,18 @@ def plotDist(metadf, df, stat, ax, plot_legend=True, marker=None):
        1.0:"forestgreen"
     }
 
-    if stat in ["VzAna", "ZAna"]:
-        sns.lineplot(data=df,
-                     x="time",
-                     y=stat,
-                     legend=False,
-                     color="grey", #C[dt],
-                     ax=ax,
-                     )
+    if stat in ["VzSubAna", "ZAna"]:
+        T=np.linspace(0., df["time"].max(), 100)
+        k=2.*np.pi/metadf["Wavelength"]
+        y=df["y"].iloc[0]
+
+        if stat=="VzSubAna":
+            H=-metadf["Amplitude"]*k*metadf["Wave Celerity"]*np.cos(k*y - k*metadf["Wave Celerity"]*T)
+        if stat=="ZAna":
+            H=metadf["Amplitude"]*np.sin(k*y - k*metadf["Wave Celerity"]*T)
+
+        ax.plot(T, H, color="grey", linewidth=3)
+
     else:
         sns.scatterplot(data=df,
                     x="time",
@@ -457,6 +476,7 @@ def plotDist(metadf, df, stat, ax, plot_legend=True, marker=None):
                     legend=plot_legend,
                     color=C[dt],
                     marker=spec[stat][1],
+                    s=150,
                     ax=ax,
                     label=dt,
                     linewidths=0
@@ -481,26 +501,26 @@ def plotError(metadf, df, ax):
     dt=metadf["Time Interval"]
 
 
-    ax.scatter([dt], [df["VzCorr"].abs().max()], marker="x", color="black", s=150)
+    ax.scatter([dt], [df["AbsError"].abs().max()], marker="x", color="black", s=150)
 
-    ax.set_ylabel(r"$max(|v^{cell}_z|)$ (µm/s)", fontsize=20)
+    ax.set_ylabel(r"$max(|v^{sub,num}_z - v^{sub,th}_z|)$ (µm/s)", fontsize=20)
     ax.set_xlabel(r"$\Delta t$ (s)")
     ax.set_yscale('log')
     ax.set_xscale('log')
 #
 
 def getLegendHandles(stat, handles):
-    if stat == "VzAna":
-        point1 = Line2D([0], [0], label=r'$v^{obs}_z$', marker='o', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
+    if stat == "VzSubAna":
+        point1 = Line2D([0], [0], label=r'$v^{sub,num}_z$', marker='o', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
         #point2 = Line2D([0], [0], label=r'$v^{sub,obs}_z$', marker='s', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
-        point3 = Line2D([0], [0], label=r'$v^{sub,th}_z$', marker='', markersize=10, markerfacecolor='black', linestyle='-', color="grey", markeredgecolor='white')
+        point3 = Line2D([0], [0], label=r'$v^{sub,th}_z$', marker='', markersize=10, markerfacecolor='black', linestyle='-', linewidth=3, color="grey", markeredgecolor='white')
         mpatch1 = mpatches.Patch(facecolor='forestgreen', label=r"$\Delta t=1$s", edgecolor='black')
         mpatch2 = mpatches.Patch(facecolor='steelblue', label=r"$\Delta t=0.1$s", edgecolor='black')
         mpatch3 = mpatches.Patch(facecolor='orangered', label=r"$\Delta t=0.01$s", edgecolor='black')
         handles.extend([point1, point3, mpatch1, mpatch2, mpatch3])
     #
 
-    if stat == "VzCorr":
+    if stat in ["AbsError"]:
         mpatch1 = mpatches.Patch(facecolor='forestgreen', label=r"$\Delta t=1$s", edgecolor='black')
         mpatch2 = mpatches.Patch(facecolor='steelblue', label=r"$\Delta t=0.1$s", edgecolor='black')
         mpatch3 = mpatches.Patch(facecolor='orangered', label=r"$\Delta t=0.01$s", edgecolor='black')
@@ -508,13 +528,13 @@ def getLegendHandles(stat, handles):
     #
 
     if stat == "ZAna":
-        point1 = Line2D([0], [0], label=r'$h^{obs}$', marker='o', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
+        point1 = Line2D([0], [0], label=r'$h^{sub,obs}$', marker='o', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
         point3 = Line2D([0], [0], label=r'$h^{sub,th}$', marker='', markersize=10, markerfacecolor='black', linestyle='-', color="grey", markeredgecolor='white')
         mpatch1 = mpatches.Patch(facecolor='forestgreen', label=r"$\Delta t=1$s", edgecolor='black')
         mpatch2 = mpatches.Patch(facecolor='steelblue', label=r"$\Delta t=0.1$s", edgecolor='black')
         mpatch3 = mpatches.Patch(facecolor='orangered', label=r"$\Delta t=0.01$s", edgecolor='black')
         handles.extend([point1, point3, mpatch1, mpatch2, mpatch3])
-    #
+    ##
 
 
 
@@ -560,10 +580,8 @@ for path in paths:
     print("... compute velocity")
     data=computeCellVelocity(metadata, data, report=False)
     summary_by_time=getSpeed(metadata, data)
-    summary_by_time=prepareToPlot(summary_by_time)
+    #summary_by_time=prepareToPlot(summary_by_time)
     summary_by_time=summary_by_time[summary_by_time['time']<=10.]
-
-    print(data[["Vz", ]])
     
     # plot
     plotError(metadata, summary_by_time, ax=ax6)
@@ -575,10 +593,9 @@ for path in paths:
         plotDist(metadata, summary_by_time, stat="Vy", ax=ax3, plot_legend=False)
     
     plotDist(metadata, summary_by_time, stat="Vz", ax=ax4, plot_legend=False)
-    #plotDist(metadata, summary_by_time, stat="VzSub", ax=ax4, plot_legend=False)
-    plotDist(metadata, summary_by_time, stat="VzAna", ax=ax4)
-    plotDist(metadata, summary_by_time, stat="VzCorr", ax=ax5)
-    plotDist(metadata, summary_by_time, stat="z", ax=ax1)
+    plotDist(metadata, summary_by_time, stat="VzSubAna", ax=ax4)
+    plotDist(metadata, summary_by_time, stat="AbsError", ax=ax5)
+    plotDist(metadata, summary_by_time, stat="z", ax=ax1, plot_legend=False)
     plotDist(metadata, summary_by_time, stat="ZAna", ax=ax1)
 
     

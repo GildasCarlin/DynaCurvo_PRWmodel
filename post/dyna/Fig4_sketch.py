@@ -172,8 +172,6 @@ def normalizeHeight(metadata, df, report=False):
     # get coresponding x
     df.insert(pos0+2, "xbis", np.arccos(df["z_hat"]) / (k*L))
 
-    print(df)
-
     if report:
         print("\n-- report on height")
         print("Amplitude (µm):", round(A, 3))
@@ -332,7 +330,7 @@ def plotTimeAsFollower(df, ax, report=False):
 
     ax.set_xlim(left=0., right=100.)
     ax.set_xticks([0., 25., 50., 75., 100.])
-    ax.set_xlabel("% of time spent following the wave", fontsize=15)
+    ax.set_xlabel("Time spent following the wave (%)", fontsize=15)
     ax.set_ylabel("Cell count (Density)", fontsize=20)
     
 
@@ -644,7 +642,7 @@ def prepareData(metadf, df):
     df[["y", "theta"]] *= -1.
 
     ## compute vx, vy and speed
-    df=computeCellVelocity(df, dt=metadf["Time Interval"], report=True)
+    df=computeCellVelocity(df, dt=metadf["Time Interval"], report=False)
 
     ## compute wave vector
     df=computeWaveVector(df)
@@ -658,7 +656,7 @@ def prepareData(metadf, df):
                         )
     
     ## height
-    df=normalizeHeight(metadf, df, report=True)
+    df=normalizeHeight(metadf, df, report=False)
 
     # sequences of followers
     df, df_followers=isolateFollowers(df,
@@ -1026,6 +1024,8 @@ def plotSingleTrajInPhase(ax, file="dt=1.0", threshold=20, rand=False, N=5):
 
 
 
+
+
     
 
 
@@ -1068,23 +1068,26 @@ celerities = [.7]
 #                                                    Open figure
 # ================================================================================================================
 # ================================================================================================================
-NbLignes, NbColonnes=2, 4
-Largeur, Hauteur = 20, 10
-Largeur_ins, Hauteur_ins = 2.5, 2.5
-fig1 = plt.figure(num="curvature_traj", figsize=(Largeur, Hauteur), constrained_layout=True)
-gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
+NbLignes, NbColonnes=3, 3
+Largeur, Hauteur = 20, 20
+Largeur_ins, Hauteur_ins = 1.5, 1.5
+fig1 = plt.figure(num="curvature_traj", figsize=(Largeur, Hauteur), constrained_layout=False)
+gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1, wspace=0.5, hspace=0.3)
 
 ## font size
 plt.rcParams.update({"font.size": 15})
 
-ax1 = fig1.add_subplot(gs1[:, 0])
-ax2 = fig1.add_subplot(gs1[:, 1])
+ax1 = fig1.add_subplot(gs1[0:2, 0])
+ax2 = fig1.add_subplot(gs1[0:2, 1])
 ax3 = fig1.add_subplot(gs1[0, 2])
-ax4 = fig1.add_subplot(gs1[0, 3])
-ax5 = fig1.add_subplot(gs1[1, 2])
-ax6 = fig1.add_subplot(gs1[1, 3])
-#ax7 = fig1.add_subplot(gs1[0, 4])
+ax4 = fig1.add_subplot(gs1[1, 2])
+
+ax5 = fig1.add_subplot(gs1[2, 0])
+ax6 = fig1.add_subplot(gs1[2, 1])
+ax7 = fig1.add_subplot(gs1[2, 2])
 #ax8 = fig1.add_subplot(gs1[1, 4])
+
+ax6_ins = inset_axes(ax6, width=Largeur_ins, height=Hauteur_ins, loc="upper right")
 
 ## add labels
 def add_label(ax, txt, x=-0.05, y=1.15):
@@ -1097,7 +1100,7 @@ add_label(ax3, "C")
 add_label(ax4, "D")
 add_label(ax5, "E")
 add_label(ax6, "F")
-#add_label(ax7, "E")
+add_label(ax7, "G")
 #add_label(ax8, "H")
 
 
@@ -1138,7 +1141,7 @@ data, data_followers=prepareData(metadata, data)
 print("--------- plot")
 
 plotCurvatureVsXaxis(metadata, ax=ax3)
-plotTimeAsFollower(data, ax=ax5, report=True)
+plotTimeAsFollower(data, ax=ax5, report=False)
 plotVsTime(metadata, data_followers, axs=[ax1, ax2], rand=False, N=1)
 #plotAlignementCurvaturePhase(data_followers, Nt=1, ax=ax7)
 #plotSpeedInPhase(metadata, data_followers, axs=[ax6, ax8])
@@ -1165,6 +1168,7 @@ def searchFilesToAnalyse(root):
 
 files=searchFilesToAnalyse(NDSC_assets)
 Mean, Count, Q, STD=[], [], [], []
+Mean_perst, STD_perst=[], []
 for file in files:
     # open file
     metadata, data=loadTrajectoryData(file, must_be_int)
@@ -1191,29 +1195,167 @@ for file in files:
     subdata=subdata.drop(["t_diff", "is_gap"], axis=1)
 
     # remove too short sequences
-    subdata = subdata[subdata.groupby(["cell", "sequence_id"])["cell"].transform("size") >= 10]
+    subdata = subdata[subdata.groupby(["cell", "sequence_id"])["cell"].transform("size") >= 2]
+    Perst=subdata.groupby(["cell", "sequence_id"]).size()
+    Mean_perst.append(Perst.mean())
+    STD_perst.append(Perst.std())
     Count.append(len(subdata.groupby(["cell", "sequence_id"]).size()))
 
 
 
 color="mediumorchid"
-ax6.plot(Q, Mean, marker="o", color=color)
-m_plus = [Mean[i] + STD[i] for i in range(len(Mean))]
-m_minus = [Mean[i] - STD[i] for i in range(len(Mean))]
-ax6.plot((Q,Q), (m_plus,m_minus),'-',color=color)
+Mean_perst=[15.*t for t in Mean_perst]
+STD_perst=[15.*t for t in STD_perst]
+ax6_ins.plot(Q, Mean_perst, marker="o", color=color)
+m_plus = [Mean_perst[i] + STD_perst[i] for i in range(len(Mean_perst))]
+m_minus = [Mean_perst[i] - STD_perst[i] for i in range(len(Mean_perst))]
+ax6_ins.plot((Q,Q), (m_plus,m_minus),'-',color=color)
 
-ax6.set_ylabel("Average % of time spent \n following the wave", color=color)
-ax6.set_ylim(bottom=0.)
-ax6.tick_params(axis="y", labelcolor=color)
-ax6.set_xlabel(r"$q (µm^2/s)$")
+ax6_ins.set_ylim(bottom=0., top=750.)
+ax6_ins.tick_params(axis="y", labelcolor=color)
+ax6_ins.set_xlabel(r"$q$ $(µm^2/s)$")
+ax6_ins.text(0.5, 0.75, "c=0.4", transform=ax6_ins.transAxes, fontsize=15, fontweight='bold', va='top', ha='right')
 
-ax61=ax6.twinx()
+ax61_ins=ax6_ins.twinx()
+ax61_ins.set_yticklabels([])
+ax61_ins.set_ylim(bottom=0., top=500.)
 color="steelblue"
-ax61.plot(Q, Count, marker="o", color=color)
+ax61_ins.plot(Q, Count, marker="o", color=color)
+
+ax61_ins.set_ylim(bottom=0.)
+ax61_ins.tick_params(axis="y", labelcolor=color)
+
+
+path_root=os.path.join(root, substrate_regime, "assets", "NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity", "L=20.0")
+celerities=[0.1, 0.3, 0.4, 0.6, 0.8, 1., 1.2, 1.4, 1.6]
+
+Mean, Count, C, STD=[], [], [], []
+Mean_perst, STD_perst=[], []
+for c in celerities:
+    print(f"... c={c}µm/s")
+
+    path=os.path.join(path_root, f"c={c}", "data.txt")
+
+    metadata, data=loadTrajectoryData(path, must_be_int)
+
+    # format_data
+    data, data_followers=prepareData(metadata, data)
+
+    # get c value
+    C.append(float(re.findall(r"c=(\d*\.*\d*)", path)[0]))
+
+    ## pourcentage time spent to follow
+    group=data.groupby("cell")
+    percentage_follower=100.*group["follower"].sum().div(group.size())
+    stats=percentage_follower.describe()
+    Mean.append(stats["mean"])
+    STD.append(stats["std"])
+
+    subdata=data_followers[["frame", "time", "cell", "xbis", "v_dot_e1"]].copy()
+    ## separation of sequences
+    subdata = subdata.sort_values(["cell", "frame"])
+    subdata["t_diff"] = subdata.groupby("cell")["frame"].diff()
+    subdata["is_gap"] = (subdata["t_diff"] != 1) | subdata["t_diff"].isna()
+    subdata["sequence_id"] = subdata.groupby("cell")["is_gap"].cumsum()
+    subdata=subdata.drop(["t_diff", "is_gap"], axis=1)
+
+    # remove too short sequences
+    subdata = subdata[subdata.groupby(["cell", "sequence_id"])["cell"].transform("size") >= 2]
+    Perst=subdata.groupby(["cell", "sequence_id"]).size()
+    Mean_perst.append(Perst.mean())
+    STD_perst.append(Perst.std())
+    Count.append(len(subdata.groupby(["cell", "sequence_id"]).size()))
+
+
+## insert ax6
+color="mediumorchid"
+Mean_perst=[15.*t for t in Mean_perst]
+STD_perst=[15.*t for t in STD_perst]
+ax6.plot(C, Mean_perst, marker="o", color=color)
+m_plus = [Mean_perst[i] + STD_perst[i] for i in range(len(Mean_perst))]
+m_minus = [Mean_perst[i] - STD_perst[i] for i in range(len(Mean_perst))]
+ax6.plot((C,C), (m_plus,m_minus),'-',color=color)
+
+ax6.set_ylim(bottom=0., top=750.)
+ax6.tick_params(axis="y", labelcolor=color)
+ax6.set_xlabel(r"Wave celerity (µm/s)")
+
+ax6.text(0.8, 0.7, r"$q$=1", transform=ax6_ins.transAxes, fontsize=12, fontweight='bold', va='top', ha='right')
+ax6.set_ylabel("Wave-following phase duration (s)", color=color)
+ax61=ax6.twinx()
+ax61.set_ylim(bottom=0., top=500.)
+color="steelblue"
 ax61.set_ylabel("Event count", color=color)
+ax61.plot(C, Count, marker="o", color=color)
 ax61.set_ylim(bottom=0.)
 ax61.tick_params(axis="y", labelcolor=color)
 
+path_root=os.path.join(root, substrate_regime, "assets", "NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity", "L=40.0")
+celerities=[0.1, 0.3, 0.4, 0.6, 0.8, 1., 1.2, 1.4, 1.6]
+
+Mean, Count, C, STD=[], [], [], []
+Mean_perst, STD_perst=[], []
+for c in celerities:
+    print(f"... c={c}µm/s")
+
+    path=os.path.join(path_root, f"c={c}", "data.txt")
+
+    metadata, data=loadTrajectoryData(path, must_be_int)
+
+    # format_data
+    data, data_followers=prepareData(metadata, data)
+
+    # get c value
+    C.append(float(re.findall(r"c=(\d*\.*\d*)", path)[0]))
+
+    ## pourcentage time spent to follow
+    group=data.groupby("cell")
+    percentage_follower=100.*group["follower"].sum().div(group.size())
+    stats=percentage_follower.describe()
+    Mean.append(stats["mean"])
+    STD.append(stats["std"])
+
+    subdata=data_followers[["frame", "time", "cell", "xbis", "v_dot_e1"]].copy()
+    ## separation of sequences
+    subdata = subdata.sort_values(["cell", "frame"])
+    subdata["t_diff"] = subdata.groupby("cell")["frame"].diff()
+    subdata["is_gap"] = (subdata["t_diff"] != 1) | subdata["t_diff"].isna()
+    subdata["sequence_id"] = subdata.groupby("cell")["is_gap"].cumsum()
+    subdata=subdata.drop(["t_diff", "is_gap"], axis=1)
+
+    # remove too short sequences
+    subdata = subdata[subdata.groupby(["cell", "sequence_id"])["cell"].transform("size") >= 2]
+    Perst=subdata.groupby(["cell", "sequence_id"]).size()
+    Mean_perst.append(Perst.mean())
+    STD_perst.append(Perst.std())
+    Count.append(len(subdata.groupby(["cell", "sequence_id"]).size()))
+
+
+
+## insert ax6
+
+color="mediumorchid"
+Mean_perst=[15.*t for t in Mean_perst]
+STD_perst=[15.*t for t in STD_perst]
+ax7.plot(C, Mean_perst, marker="o", color=color)
+m_plus = [Mean_perst[i] + STD_perst[i] for i in range(len(Mean_perst))]
+m_minus = [Mean_perst[i] - STD_perst[i] for i in range(len(Mean_perst))]
+ax7.plot((C,C), (m_plus,m_minus),'-',color=color)
+ax7.set_ylabel("Wave-following phase duration (s)", color=color)
+
+ax7.set_ylim(bottom=0., top=750.)
+ax7.tick_params(axis="y", labelcolor=color)
+ax7.set_xlabel(r"Wave celerity (µm/s)")
+#ax7.set_yticklabels([])
+ax7.text(0.8, 0.7, r"$q$=1", transform=ax6_ins.transAxes, fontsize=12, fontweight='bold', va='top', ha='right')
+ax71=ax7.twinx()
+ax71.set_ylim(bottom=0., top=500.)
+color="steelblue"
+
+ax71.plot(C, Count, marker="o", color=color)
+ax71.set_ylim(bottom=0.)
+ax71.tick_params(axis="y", labelcolor=color)
+ax71.set_ylabel("Event count", color=color)
 
 
 
@@ -1227,15 +1369,22 @@ ax61.tick_params(axis="y", labelcolor=color)
 
 
 
-
-
-
-
+print("\n\n----------------------------------")
 if show:
+    print("... figure is showed")
     plt.show()
 
 if save:
+    print("... exporting figure")
     plt.savefig(path_to_save)
+    print("... figure is exported")
+
+
+print("\nPlot Figure 4 END OF PROCESS5\n---------------------------------------\n")
+
+
+
+
 
 
 

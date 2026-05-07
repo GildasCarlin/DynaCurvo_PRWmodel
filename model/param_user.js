@@ -47,11 +47,11 @@
 //                               -- wave celerity c>=0 (µm/s)
 //                               -- initial phase phi0 (unitless) (commun for the two directions)
 
-let surface_title='snake_sinus';
+let surface_title='right_sinus';
 
 let a=10.0;
-let lambda=20.0;
-let c=0.5;
+let lambda=80.0;
+let c=0.35;
 let phi0=0.0;
 
 let w=0.0;
@@ -73,7 +73,7 @@ let nbCell=150;
 let central_metric = 'mean';
 
 // assumption on cell dynamic    true  /  false
-let surf_assumption=false;
+let surf_assumption=true;
 let curv_assumption=true;
 
 // III. Model integration

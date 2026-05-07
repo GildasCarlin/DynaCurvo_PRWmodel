@@ -439,6 +439,7 @@ def computeZPosition(metadf, df):
         return metadf["Amplitude"]*np.sin(k*df["y"].copy() - k*metadf["Wave Celerity"]*(df["time"]+metadf["Time Interval"]))
     
     if metadf["Surface"]=="wells_sinus":
+        return metadf["Amplitude"]*np.sin(k*df["y"].copy() - k*metadf["Wave Celerity"]*(df["time"]+metadf["Time Interval"]))
     
 
 

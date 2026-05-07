@@ -24,7 +24,7 @@ from map import *
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="Other_surfaces"
+study="DSC_SpeedDistribution"
 
 # exported file (at the end of the simulation)
 home=os.path.expanduser("~")
@@ -37,6 +37,7 @@ path_to_UI = os.path.join("..", "model", "param_user.js")
 # assets
 path_to_assets=os.path.join("..", "post", substrate_regime, "assets", study)
 
+TEST=False
 
 # ================================================================================================================
 # ================================================================================================================
@@ -71,17 +72,17 @@ def getSign(metadf):
 
 def getPath(values):
 
-    mapp={(r"'convr_sinus'", 1.0):"converging_sinus",
-          (r"'convr_sinus'", -1.0):"diverging_sinus",
-          (r"'snake_sinus'", None):"Snake_sinus",
-          (r"'wells_sinus'", None):"wells",
-        }
+    ###mapp={(r"'convr_sinus'", 1.0):"converging_sinus",
+    ###      (r"'convr_sinus'", -1.0):"diverging_sinus",
+    ###      (r"'snake_sinus'", None):"Snake_sinus",
+    ###      (r"'wells_sinus'", None):"wells",
+    ###    }
+    ###ass={r"true":"DSC", r"false":"NDSC"}
+    ###subvalues=(values["surface_title"], getSign(values))
 
 
-    ass={r"true":"DSC", r"false":"NDSC"}
-    subvalues=(values["surface_title"], getSign(values))
 
-    return os.path.join(path_to_assets, mapp[subvalues], ass[values["surf_assumption"]], rf"c={values["c"]}_Zspeed")
+    return os.path.join(path_to_assets, f"L={values["lambda"]}", f"c={values["c"]}")
 #
 
 
@@ -104,28 +105,41 @@ for key, values in sim.items():
     print("\nSimulation number " + str(count) + " out of " + str(total_number_of_simu) + " (" + str(round(100.*count/total_number_of_simu, 2)) + "%)")
     print("------------------------------------------")
 
+    
+    ## if a data.txt exists in the target folder, the simulation is considered done and ignored
+    path=getPath(values)
+    if TEST:
+        print(path)
+
+    if os.path.isfile(os.path.join(path, "data.txt")):
+        print("...... simulation already done !")
+        continue
+    #
+    
     print("...... preparation")
     editUI(values)
 
     ## run simulation
-    os.system(r"start http://localhost:8000//" + path_to_model)
+    if not TEST:
+        os.system(r"start http://localhost:8000//" + path_to_model)
     print(f'...... simulation {key} is running')
 
     ## check when the simulation is done
-    simu_is_done = os.path.exists(path_to_export)
-    while (not simu_is_done):
-        time.sleep(0.1)
+    if not TEST:
         simu_is_done = os.path.exists(path_to_export)
+        while (not simu_is_done):
+            time.sleep(0.1)
+            simu_is_done = os.path.exists(path_to_export)
     ##
 
-    ## when the simulation is done, move the data file to corresponding data analysis folder ...
-    path=getPath(values)
-    print(path)
-    os.system(r'move "'+path_to_export + r'" "' + path)
+    ## when the simulation is done, move the data file to target data analysis folder ...
+    if not TEST:
+        os.system(r'move "'+path_to_export + r'" "' + path)
     print('...... simulation is done, files are exported')
 
     ###... and close simulation
-    os.system(r'taskkill /f /im msedge.exe')
+    if not TEST:
+        os.system(r'taskkill /f /im msedge.exe')
 #
 
 
