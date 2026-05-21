@@ -178,7 +178,7 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="NDSC_SpeedDistribution" # os.path.join("SpeedDistribution", "c=0.0")
+study="Other_surfaces" # os.path.join("SpeedDistribution", "c=0.0")
 
 # assets
 path_to_assets=os.path.join(os.getcwd(), substrate_regime, "assets", study)

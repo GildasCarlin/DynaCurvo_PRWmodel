@@ -24,7 +24,7 @@ from map import *
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="DSC_SpeedDistribution"
+study="DSC_lookingForCsat_vinst=0_q=0_Zspeed"
 
 # exported file (at the end of the simulation)
 home=os.path.expanduser("~")
@@ -35,8 +35,9 @@ path_to_model = os.path.join("model")
 path_to_UI = os.path.join("..", "model", "param_user.js")
 
 # assets
-path_to_assets=os.path.join("..", "post", substrate_regime, "assets", study)
+path_to_assets=os.path.join("..", "post", substrate_regime, "assets")
 
+# TEST code before actual run (True), False otherwise
 TEST=False
 
 # ================================================================================================================
@@ -71,18 +72,26 @@ def getSign(metadf):
 #
 
 def getPath(values):
+    ass={r"true":"DSC", r"false":"NDSC"}
+    mapp={(r"'convr_sinus'", 1.0):"converging_sinus",
+          (r"'convr_sinus'", -1.0):"diverging_sinus",
+          (r"'snake_sinus'", None):"Snake_sinus",
+          (r"'wells_sinus'", None):"wells",
+        }
+    
 
-    ###mapp={(r"'convr_sinus'", 1.0):"converging_sinus",
-    ###      (r"'convr_sinus'", -1.0):"diverging_sinus",
-    ###      (r"'snake_sinus'", None):"Snake_sinus",
-    ###      (r"'wells_sinus'", None):"wells",
-    ###    }
-    ###ass={r"true":"DSC", r"false":"NDSC"}
-    ###subvalues=(values["surface_title"], getSign(values))
+    subvalues=(values["surface_title"], getSign(values))
+    if subvalues[0]==r"'right_sinus'":
+        return os.path.join(path_to_assets, study, f"L={values["lambda"]}", f"c={values["c"]}")
+    
+    else:
+        return os.path.join(path_to_assets, "Other_surfaces", mapp[subvalues], ass[values["surf_assumption"]], f"c={values["c"]}_Zspeed")
+
+#
 
 
 
-    return os.path.join(path_to_assets, f"L={values["lambda"]}", f"c={values["c"]}")
+    
 #
 
 

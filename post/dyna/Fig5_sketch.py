@@ -26,8 +26,8 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 #                                                    Open figure
 # ================================================================================================================
 # ================================================================================================================
-NbLignes, NbColonnes=4, 4
-Largeur, Hauteur = 23, 20
+NbLignes, NbColonnes=3, 4
+Largeur, Hauteur = 23, 18
 Largeur_ins, Hauteur_ins = 1.1, 1.1
 fig1 = plt.figure(num="exotic_surfaces", figsize=(Largeur, Hauteur), constrained_layout=True)
 gs1 = GridSpec(NbLignes, NbColonnes, figure=fig1)
@@ -53,6 +53,7 @@ ax1_DSC = fig1.add_subplot(gs1[1, 0])
 ax2_DSC = fig1.add_subplot(gs1[1, 1])
 ax3_DSC = fig1.add_subplot(gs1[1, 2])
 ax4_DSC = fig1.add_subplot(gs1[1, 3])
+#ax5_DSC = inset_axes(ax5_NDSC, width=1.7, height=1.7)
 
 # other stats
 ax1 = fig1.add_subplot(gs1[2, 1])
@@ -87,7 +88,7 @@ add_label(ax5_NDSC, "C")
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="test"
+study="Other_surfaces"
 
 # assets
 root=os.getcwd()
@@ -113,7 +114,8 @@ traj_mapping={("convr_sinus", 0, 1.0):ax1_NDSC,
               ("convr_sinus", 1, -1.0):ax2_DSC,
               ("wells_sinus", 1, None):ax4_DSC,
               ("snake_sinus", 1, None):ax3_DSC,
-              ("right_sinus", 0, None):ax5_NDSC
+              ("right_sinus", 0, None):ax5_NDSC,
+              #("right_sinus", 1, None):ax5_DSC
              }
 
 patt_mapping={("convr_sinus", "dyna"):ax1_pattern,
@@ -192,6 +194,8 @@ def loadTrajectoryData(filename, list=["Surface Index", "Number of Cells", "surf
 #
 
 def formatTrajectories(df, center=True, convert=True):
+
+    df[["x", "y", "z"]]=df[["x", "y", "z"]].astype("float")
     
     # trajectories are centered at origin.
     if center:
@@ -211,12 +215,6 @@ def formatTrajectories(df, center=True, convert=True):
 
 def plotTrajectories(metadf, df, mapping, xticks=[-.8, 0., .8], yticks=[-.8, 0., .8], N=30, centered=True):
 
-    # spec
-    if metadf["Surface"]=="right_sinus":
-        xticks=[-1.7, 0., 1.3]
-        yticks=[-.5, 0., 2.5]
-    #
-    
     ## random cells id to plot
     IDlist = np.random.choice(df['cell'].unique(), size=N, replace=False)
 
@@ -237,9 +235,28 @@ def plotTrajectories(metadf, df, mapping, xticks=[-.8, 0., .8], yticks=[-.8, 0.,
                     edgecolor='none'
                     )
     
+    
+    
+    # spec
+    if metadf["Surface"]=="right_sinus":
+        # get barycenter
+        final_pos=df[df["time"]==df["time"].unique()[-1]][["X", "Y"]].replace([np.inf, -np.inf], np.nan).mean(axis=0)
+        ax.scatter(final_pos['X'], final_pos['Y'], marker='o', s=200, c="#F2D027", alpha = 1., edgecolors='black', zorder=2)
+    #
+    
+    if ax==ax5_NDSC:
+        xticks=[-2., 0., 1.]
+        yticks=[-1., 0., 2.]
+    #if ax==ax5_DSC:
+    #    xticks=[-1.6, 0., 1.2]
+    #    yticks=[-.9, 0., 2.]       
+    
     ax.get_legend().set_visible(False)
-    ax.set_xlabel('x (mm)', fontsize=22)
-    ax.set_ylabel('y (mm)', fontsize=22)
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    if True: #ax not in [ax5_DSC]:
+        ax.set_xlabel('x (mm)', fontsize=22)
+        ax.set_ylabel('y (mm)', fontsize=22)
     ax.tick_params(axis='both', which='major', labelsize=15)
 
     ax.set_yticks(yticks) 
@@ -253,6 +270,7 @@ def plotTrajectories(metadf, df, mapping, xticks=[-.8, 0., .8], yticks=[-.8, 0.,
     else:
         rect=mpatches.Rectangle([-0.2, -0.2], width=0.4, height=0.4, ec='deeppink', ls="--", alpha=1., fill=0, lw=4, zorder=2)
         ax.add_patch(rect)
+    
     
     if ax == ax1_NDSC:
         ax.text(-.25, .5, 
@@ -383,9 +401,7 @@ def getDx(df, globaldf):
 #
 
 def computeCellVelocity(metadf, df, check_unity=False, report=False):
-    print(df.head())
     dt=metadf["Time Interval"]
-    
     pos0 = df.columns.get_loc("z")
 
     ## FIRST: the cell velocity is computed in the external fixed frame
@@ -398,24 +414,26 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
     df.insert(pos0+3, "Dz", diff_result["z"])
 
     # velocity components in the external fixed frame
-    df.insert(pos0+4, "Vx", diff_result["x"]/dt)
-    df.insert(pos0+5, "Vy", diff_result["y"]/dt)
-    df.insert(pos0+6, "Vz", diff_result["z"]/dt)
-    df = df.dropna().reset_index(drop=True)
+    df.insert(pos0+4, "Vx", df["Dx"]/dt)
+    df.insert(pos0+5, "Vy", df["Dy"]/dt)
+    df.insert(pos0+6, "Vz", df["Dz"]/dt)
 
     # speed=sqrt(vx^2+vy^2++vz^2) of the cell in the external fixed frame
-    df.insert(pos0+7, "speed", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
-
-    print(df.head())
+    df.insert(pos0+7, "speedObs", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["Vz"].pow(2)).pow(.5))
 
     ## SECOND: the cell velocity is computed in the frame attached to surface but parallel to the external fixed frame
     ## v=(r(t_{i+1})-r(t_i) )/Delta t - (0, 0, h(x(t_i), t_{i+1}) - h(x(t_i), t_{i}))/Delta t
 
-    df.insert(pos0+8, "zSub", computeZPosition(metadf, df))
-    df.insert(pos0+9, "VzSub", (df["zSub"].copy() - df["z"]).copy()/dt)
-    df.insert(pos0+10, "VzCorr", df["Vz"].copy() - df["VzSub"].copy())
-    df.insert(pos0+11, "speedCorr", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCorr"].pow(2)).pow(.5)) ## cell speed corrected 
+    # theoretical height at the y-position at time t-Dt 
+    df.insert(pos0+8, "ZAna_tmDt", computeZPosition(metadf, df))
+
+    # numerical substrate vertical velocity at time t. The vertical cell velocity is deduced.
+    df.insert(pos0+9, "VzSub", (df["z"]-df["ZAna_tmDt"])/dt)
+    df.insert(pos0+10, "VzCell", df["Vz"] - df["VzSub"])
+    df.insert(pos0+11, "speedCell", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCell"].pow(2)).pow(.5)) 
     df.insert(pos0+12, "speedSub", df["VzSub"].pow(2).pow(.5))
+
+    df = df.dropna().reset_index(drop=True)
 
     if check_unity:
         df.insert(pos0+12, "check_unity", (df["Vx_hat"].pow(2) + df["Vy_hat"].pow(2) + df["Vz_hat"].pow(2)).pow(.5))
@@ -426,7 +444,7 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
 
     if report:
         print("\n-- report on velocity")
-        print(df[["Dx", "Dy", "Dz", "Vx", "Vy", "Vz", "z", "zSub", "speedCorr"]].head(), "\n")
+        print(df[["z", "ZAna_tmDt", "Vz", "VzSub", "VzCell"]].head(), "\n")
 
     return df
 #
@@ -434,17 +452,46 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
 def computeZPosition(metadf, df):
 
     k=2.*np.pi/metadf["Wavelength"]
+    X=df[["x"]].copy()
+    Y=df["y"].copy()
+    T=df["time"]-metadf["Time Interval"]
+    c=metadf["Wave Celerity"]
 
     if metadf["Surface"]=="right_sinus":
-        return metadf["Amplitude"]*np.sin(k*df["y"].copy() - k*metadf["Wave Celerity"]*(df["time"]+metadf["Time Interval"]))
+        return metadf["Amplitude"]*np.sin(k*Y - k*c*T)
     
     if metadf["Surface"]=="wells_sinus":
-        return metadf["Amplitude"]*np.sin(k*df["y"].copy() - k*metadf["Wave Celerity"]*(df["time"]+metadf["Time Interval"]))
+        return .5*metadf["Amplitude"]*(np.sin(k*Y - k*c*T) + np.sin(k*X["x"]))
     
+    if metadf["Surface"]=="snake_sinus":
+        ks=2.*np.pi/metadf["Wavelength (snake)"]
+        return metadf["Amplitude"]*np.sin(k*X["x"] - metadf["Amplitude (snake)"]*np.sin(ks*Y - ks*c*T))
+    
+    if metadf["Surface"]=="convr_sinus":
+        x0=metadf["Initial Angle"]
+        p=metadf["Angular Velocity"]
+        X["absx"]=X["x"].abs()
+        X["absx-x0"]=X["absx"] - x0
+        X["Heaviside"]=np.heaviside(X["absx-x0"], 0.)
+        return -metadf["Amplitude"]*np.sin(k*Y - X["Heaviside"]*p*x0*(2.*X["absx"]-x0) - (1.-X["Heaviside"])*p*X["x"]**2.0 - k*c*T)
+        
+
+def cles_safe(x, y):
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    # Tri pour approche efficace
+    x = np.sort(x)
+    y = np.sort(y)
+
+    # Comptage efficace via recherche binaire
+    idx = np.searchsorted(y, x, side='right')
+    return idx.mean() / len(y)
+#    
 
 
 
-def getSpeed(metadf, df, cl="speedCorr"):
+def getSpeed(metadf, df, cl="speedCell"):
 
     Speed=df[[cl]].copy()
 
@@ -489,7 +536,7 @@ def plotDist(df, stat, ax, palette=rege_palette, whis=1.5, plot_legend=True, hue
         ax.set_ylim(bottom=0., top=1.)
     #
         
-    if stat=='speedCorr':
+    if stat=='speedCell':
         infos={'y_label1':r'Cell speed $|| \mathbf{v} ||_2$ (µm/s)'}
         #ax.set_ylim(bottom=0., top=3.)
 
@@ -535,6 +582,25 @@ def plotDist(df, stat, ax, palette=rege_palette, whis=1.5, plot_legend=True, hue
     ax.set_xticklabels(labels=df["pattern"].unique(), rotation=45)
 #
 
+def CLES_print(df, dunn_matrix, stat):
+    for i in range(len(dunn_matrix.columns)):
+        for j in range(i + 1, len(dunn_matrix.columns)):
+            pval = dunn_matrix.iloc[i, j]
+            if pval < 0.05:
+                g1 = dunn_matrix.index[i]
+                g2 = dunn_matrix.columns[j]
+
+                x = df[df["group"] == g1][stat]
+                y = df[df["group"] == g2][stat]
+                cles = cles_safe(x,y)
+
+                print(
+                    f"{g1} vs {g2} "
+                    f"| p={pval:.4g} "
+                    f"| CLES={cles:.3f}"
+                )
+#
+
 
     
 
@@ -577,18 +643,26 @@ for surface in surfaces:
         # plot trajectories and surface pattern
         if c in [.5]:
             print("... trajectories plotting")
-            plotTrajectories(metadf=metadata, df=data, mapping=traj_mapping, N=30)
-            plotPattern(metadf=metadata, path=os.path.join(working_folder, "pattern.jpg"), mapping=patt_mapping)
+            N=30
+            if surface in ["rotation"]:
+                N=20
+            #
+
+            if path==r"C:\Users\Gildas\Documents\DynaCurvo_PRWmodel\post\dyna\assets\Other_surfaces\rotation\DSC\c=0.5\data.txt":
+                continue
+
+            plotTrajectories(metadf=metadata, df=data, mapping=traj_mapping, N=N)
+            plotPattern(metadf=metadata, path=os.path.join(working_folder, "pattern_zoom.png"), mapping=patt_mapping)
             #plotBarycenters(metadata, data, mapping=DSC_bary_mapping)
         #
 
         # compute statistic
-        print("... compute cell-statistics")
-        summary_by_cell_local=getEndingPoint(metadata, data, centered=True)
-        summary_by_cell_local=getDx(data, summary_by_cell_local)
-        list1.append(summary_by_cell_local)
+        if surface not in ["rotation"]:
+            print("... compute cell-statistics")
+            summary_by_cell_local=getEndingPoint(metadata, data, centered=True)
+            summary_by_cell_local=getDx(data, summary_by_cell_local)
+            list1.append(summary_by_cell_local)
 
-        if surf not in ["right_sinus"]:
             # open file for the speed computation
             print("... format trajectories --- Zspeed")
             metadataZ, dataZ=loadTrajectoryData(re.sub(rf"c={c}", rf"c={c}_Zspeed", path))
@@ -596,7 +670,7 @@ for surface in surfaces:
         
             print("... compute time-statistics")
             dataZ=computeCellVelocity(metadataZ, dataZ, report=False)
-            summary_by_time_local=getSpeed(metadataZ, dataZ, cl="speedCorr")
+            summary_by_time_local=getSpeed(metadataZ, dataZ, cl="speedCell")
             list2.append(summary_by_time_local)
     #
 #
@@ -622,36 +696,7 @@ summary_by_time_to_plot=summary_by_time_to_plot[summary_by_time_to_plot["pattern
 # plots
 plotDist(summary_by_cell_to_plot, stat="last_y", ax=ax1, whis=1.5, plot_legend=True)
 plotDist(summary_by_cell_to_plot, stat="dx", ax=ax2, whis=1.5, plot_legend=True)
-plotDist(summary_by_time_to_plot, stat="speedCorr", ax=ax3, whis=1.5, plot_legend=True) # .copy().sample(frac=1.)
-
-
-
-
-
-
-
-        
-        
-
-
-
-
-
-
-
-
-
-
-        
-    
-
-
-
-
-
-
-
-
+plotDist(summary_by_time_to_plot.sample(frac=0.03).sort_index(), stat="speedCell", ax=ax3, whis=1.5, plot_legend=True)
 
 
 print("\n\n----------------------------------")
@@ -666,3 +711,106 @@ if save:
 
 
 print("\nPlot Figure 5 END OF PROCESS5\n---------------------------------------\n")
+print("Statictical analysis Figure 5 \n---------------------------------------\n")
+
+from scipy import stats
+import scikit_posthocs as sp
+
+## reports
+print("... reports")
+print(summary_by_cell_to_plot.groupby(["assumption", "pattern", "celerity"]).describe())
+print(summary_by_time_to_plot.groupby(["assumption", "pattern", "celerity"]).describe())
+
+
+# créations étiquettes
+summary_by_cell_to_plot["group"] = (
+    summary_by_cell_to_plot["assumption"].astype(str)
+    + "_"
+    + summary_by_cell_to_plot["pattern"].astype(str)
+    + "_"
+    + summary_by_cell_to_plot["celerity"].astype(str)
+)
+
+summary_by_time_to_plot["group"] = (
+    summary_by_time_to_plot["assumption"].astype(str)
+    + "_"
+    + summary_by_time_to_plot["pattern"].astype(str)
+    + "_"
+    + summary_by_time_to_plot["celerity"].astype(str)
+)
+
+#### KRUSKAL WALLIS test 
+print("\n\n---------------------------------------")
+print("Kruskal-Wallis test BT")
+groups = [
+    group["last_y"].values
+    for _, group in summary_by_cell_to_plot.groupby("group")
+]
+
+stat, p = stats.kruskal(*groups)
+print("H =", stat)
+print("p =", p)
+
+print("\nKruskal-Wallis test dx")
+groups = [
+    group["dx"].values
+    for _, group in summary_by_cell_to_plot.groupby("group")
+]
+
+stat, p = stats.kruskal(*groups)
+print("H =", stat)
+print("p =", p)
+
+print("\nKruskal-Wallis test speedCell")
+groups = [
+    group["speedCell"].values
+    for _, group in summary_by_time_to_plot.groupby("group")
+]
+
+stat, p = stats.kruskal(*groups)
+print("Kruskal-Wallis")
+print("H =", stat)
+print("p =", p)
+
+print("\n\n---------------------------------------")
+print("Dunn post-hoc test BT")
+dunn = sp.posthoc_dunn(
+    summary_by_cell_to_plot,
+    val_col="last_y",
+    group_col="group",
+    p_adjust="holm"   # ou bonferroni, fdr_bh...
+)
+
+CLES_print(summary_by_cell_to_plot, dunn, "last_y")
+
+
+print("\nDunn post-hoc test dx")
+dunn = sp.posthoc_dunn(
+    summary_by_cell_to_plot,
+    val_col="dx",
+    group_col="group",
+    p_adjust="holm"   # ou bonferroni, fdr_bh...
+)
+
+CLES_print(summary_by_cell_to_plot, dunn, "dx")
+
+
+print("\nDunn post-hoc test speedCell")
+dunn = sp.posthoc_dunn(
+    summary_by_time_to_plot,
+    val_col="speedCell",
+    group_col="group",
+    p_adjust="holm"   # ou bonferroni, fdr_bh...
+)
+
+CLES_print(summary_by_time_to_plot, dunn, "speedCell")
+
+
+
+
+
+
+
+
+
+

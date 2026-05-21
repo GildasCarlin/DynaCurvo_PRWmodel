@@ -1,0 +1,113 @@
+# ================================================================================================================
+# ================================================================================================================
+#                                                    packages importation
+# ================================================================================================================
+# ================================================================================================================
+
+import os
+import regex as re
+import json
+import pandas as pd
+
+
+
+
+# ================================================================================================================
+# ================================================================================================================
+#                                                    intermediate functions
+# ================================================================================================================
+# ================================================================================================================
+
+
+def searchFilesToAnalyse(root):
+    paths_to_files = []
+
+    for root_folder, sub_folder, files in os.walk(root):
+        for file in files:
+            if re.search('data.csv|data.txt', file):
+                paths_to_files.append(os.path.join(root_folder, file))
+    return paths_to_files
+#
+
+def loadTrajectoryData(filename, list=['Surface Index', 'Number of Cells']):
+    # Read metadata
+    metadata = {}
+    with open(filename, 'r') as f:
+        for line in f:
+            if line.startswith("#"):
+                if "=" in line:
+                    # Parse metadata in the format "# key=value"
+                    key, value = line[1:].strip().split("=", 1)
+                    key=key.strip()
+
+                    try:
+                        value=json.loads(value)
+                        if key in list:                    # metadata is an integer
+                            metadata[key] = value
+                        else:                              # metadata is a float
+                            metadata[key] = float(value)
+                    except json.JSONDecodeError:           # metadata is a string
+                        metadata[key] = value
+            else:
+                break
+    #
+
+
+    # Load the numerical data from the CSV file
+    df = pd.read_csv(filename, comment='#')
+
+    return metadata, df
+#
+
+def formatTrajectories(df, center=False):
+    
+    # 1. trajectories are centered at origin.
+    if center:
+        for i in df['cell'].unique():
+            cell_i = df.loc[df['cell']==i,['x','y']].copy()
+            df.loc[df['cell']==i,['x', 'y']] -= cell_i.iloc[0]
+    #
+
+    # 2. js frame vs python frame: the y-axis is reversed
+    df['y'] *= -1.0
+
+    return df
+#
+
+
+
+
+# ================================================================================================================
+# ================================================================================================================
+#                                                    User interface
+# ================================================================================================================
+# ================================================================================================================
+
+## ------------------------------------ folder and paths
+
+# assets
+path_to_assets= # chemin vers les fichiers de trajectoires
+
+
+# ================================================================================================================
+# ================================================================================================================
+#                                                    MAIN function
+# ================================================================================================================
+# ================================================================================================================
+
+## look for folders containing a data.csv to analyse
+files_to_analyse = searchFilesToAnalyse(path_to_assets)
+
+for path in files_to_analyse:
+    metadata, data=loadTrajectoryData(path)
+
+    data=formatTrajectories(data)
+#
+
+
+
+
+
+
+
+
