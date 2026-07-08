@@ -238,11 +238,11 @@ def plotCentralStat(ass,
     if quantity=='rd':
         infos={'y_label':r'$\overline{f}$'}
         ax.axhline(y=0., linewidth = 2, color='#8C0335', linestyle='--', zorder=1)
-        ax.set_ylim(top=1., bottom=-0.32)
+        ax.set_ylim(top=.9, bottom=-0.15)
     #
     if quantity=="b":
         infos={'y_label':r"$B_T$ with $T$=20min (mm)"}
-        ax.set_ylim(bottom=-.05, top=.6)
+        ax.set_ylim(bottom=-.05, top=.55)
         ax.text(-.25, .5, 
                 name_mapping[ass]+r" cells", 
                 rotation = 'vertical', fontsize=30, fontweight='bold', va='center', ha='center', transform=ax.transAxes

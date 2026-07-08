@@ -114,7 +114,7 @@ traj_mapping={("convr_sinus", 0, 1.0):ax1_NDSC,
               ("convr_sinus", 1, -1.0):ax2_DSC,
               ("wells_sinus", 1, None):ax4_DSC,
               ("snake_sinus", 1, None):ax3_DSC,
-              ("right_sinus", 0, None):ax5_NDSC,
+              ("right_sinus", 0, None):ax3,
               #("right_sinus", 1, None):ax5_DSC
              }
 
@@ -132,6 +132,9 @@ bary_palette=["#3F2773", "#1F9E89", "#F2D027"]
 show=False
 save=True
 path_to_save=os.path.join(os.getcwd(), substrate_regime, "exotic_surfaces.svg")
+
+#stats
+perform_stat=False
 
 # ================================================================================================================
 # ================================================================================================================
@@ -244,7 +247,7 @@ def plotTrajectories(metadf, df, mapping, xticks=[-.8, 0., .8], yticks=[-.8, 0.,
         ax.scatter(final_pos['X'], final_pos['Y'], marker='o', s=200, c="#F2D027", alpha = 1., edgecolors='black', zorder=2)
     #
     
-    if ax==ax5_NDSC:
+    if ax==ax3:
         xticks=[-2., 0., 1.]
         yticks=[-1., 0., 2.]
     #if ax==ax5_DSC:
@@ -694,9 +697,9 @@ summary_by_cell_to_plot=summary_by_cell_to_plot[summary_by_cell_to_plot["pattern
 summary_by_time_to_plot=summary_by_time_to_plot[summary_by_time_to_plot["pattern"].isin(surfaces_labels)]
 
 # plots
-plotDist(summary_by_cell_to_plot, stat="last_y", ax=ax1, whis=1.5, plot_legend=True)
-plotDist(summary_by_cell_to_plot, stat="dx", ax=ax2, whis=1.5, plot_legend=True)
-plotDist(summary_by_time_to_plot.sample(frac=0.03).sort_index(), stat="speedCell", ax=ax3, whis=1.5, plot_legend=True)
+plotDist(summary_by_cell_to_plot, stat="last_y", ax=ax5_NDSC, whis=1.5, plot_legend=True)
+plotDist(summary_by_cell_to_plot, stat="dx", ax=ax1, whis=1.5, plot_legend=True)
+plotDist(summary_by_time_to_plot.sample(frac=0.03).sort_index(), stat="speedCell", ax=ax2, whis=1.5, plot_legend=True)
 
 
 print("\n\n----------------------------------")
@@ -711,106 +714,108 @@ if save:
 
 
 print("\nPlot Figure 5 END OF PROCESS5\n---------------------------------------\n")
-print("Statictical analysis Figure 5 \n---------------------------------------\n")
 
-from scipy import stats
-import scikit_posthocs as sp
+if perform_stat:
+    print("Statictical analysis Figure 5 \n---------------------------------------\n")
 
-## reports
-print("... reports")
-print(summary_by_cell_to_plot.groupby(["assumption", "pattern", "celerity"]).describe())
-print(summary_by_time_to_plot.groupby(["assumption", "pattern", "celerity"]).describe())
-
-
-# créations étiquettes
-summary_by_cell_to_plot["group"] = (
-    summary_by_cell_to_plot["assumption"].astype(str)
-    + "_"
-    + summary_by_cell_to_plot["pattern"].astype(str)
-    + "_"
-    + summary_by_cell_to_plot["celerity"].astype(str)
-)
-
-summary_by_time_to_plot["group"] = (
-    summary_by_time_to_plot["assumption"].astype(str)
-    + "_"
-    + summary_by_time_to_plot["pattern"].astype(str)
-    + "_"
-    + summary_by_time_to_plot["celerity"].astype(str)
-)
-
-#### KRUSKAL WALLIS test 
-print("\n\n---------------------------------------")
-print("Kruskal-Wallis test BT")
-groups = [
-    group["last_y"].values
-    for _, group in summary_by_cell_to_plot.groupby("group")
-]
-
-stat, p = stats.kruskal(*groups)
-print("H =", stat)
-print("p =", p)
-
-print("\nKruskal-Wallis test dx")
-groups = [
-    group["dx"].values
-    for _, group in summary_by_cell_to_plot.groupby("group")
-]
-
-stat, p = stats.kruskal(*groups)
-print("H =", stat)
-print("p =", p)
-
-print("\nKruskal-Wallis test speedCell")
-groups = [
-    group["speedCell"].values
-    for _, group in summary_by_time_to_plot.groupby("group")
-]
-
-stat, p = stats.kruskal(*groups)
-print("Kruskal-Wallis")
-print("H =", stat)
-print("p =", p)
-
-print("\n\n---------------------------------------")
-print("Dunn post-hoc test BT")
-dunn = sp.posthoc_dunn(
-    summary_by_cell_to_plot,
-    val_col="last_y",
-    group_col="group",
-    p_adjust="holm"   # ou bonferroni, fdr_bh...
-)
-
-CLES_print(summary_by_cell_to_plot, dunn, "last_y")
-
-
-print("\nDunn post-hoc test dx")
-dunn = sp.posthoc_dunn(
-    summary_by_cell_to_plot,
-    val_col="dx",
-    group_col="group",
-    p_adjust="holm"   # ou bonferroni, fdr_bh...
-)
-
-CLES_print(summary_by_cell_to_plot, dunn, "dx")
-
-
-print("\nDunn post-hoc test speedCell")
-dunn = sp.posthoc_dunn(
-    summary_by_time_to_plot,
-    val_col="speedCell",
-    group_col="group",
-    p_adjust="holm"   # ou bonferroni, fdr_bh...
-)
-
-CLES_print(summary_by_time_to_plot, dunn, "speedCell")
-
-
-
-
-
-
-
-
+    from scipy import stats
+    import scikit_posthocs as sp
+    
+    ## reports
+    print("... reports")
+    print(summary_by_cell_to_plot.groupby(["assumption", "pattern", "celerity"]).describe())
+    print(summary_by_time_to_plot.groupby(["assumption", "pattern", "celerity"]).describe())
+    
+    
+    # créations étiquettes
+    summary_by_cell_to_plot["group"] = (
+        summary_by_cell_to_plot["assumption"].astype(str)
+        + "_"
+        + summary_by_cell_to_plot["pattern"].astype(str)
+        + "_"
+        + summary_by_cell_to_plot["celerity"].astype(str)
+    )
+    
+    summary_by_time_to_plot["group"] = (
+        summary_by_time_to_plot["assumption"].astype(str)
+        + "_"
+        + summary_by_time_to_plot["pattern"].astype(str)
+        + "_"
+        + summary_by_time_to_plot["celerity"].astype(str)
+    )
+    
+    #### KRUSKAL WALLIS test 
+    print("\n\n---------------------------------------")
+    print("Kruskal-Wallis test BT")
+    groups = [
+        group["last_y"].values
+        for _, group in summary_by_cell_to_plot.groupby("group")
+    ]
+    
+    stat, p = stats.kruskal(*groups)
+    print("H =", stat)
+    print("p =", p)
+    
+    print("\nKruskal-Wallis test dx")
+    groups = [
+        group["dx"].values
+        for _, group in summary_by_cell_to_plot.groupby("group")
+    ]
+    
+    stat, p = stats.kruskal(*groups)
+    print("H =", stat)
+    print("p =", p)
+    
+    print("\nKruskal-Wallis test speedCell")
+    groups = [
+        group["speedCell"].values
+        for _, group in summary_by_time_to_plot.groupby("group")
+    ]
+    
+    stat, p = stats.kruskal(*groups)
+    print("Kruskal-Wallis")
+    print("H =", stat)
+    print("p =", p)
+    
+    print("\n\n---------------------------------------")
+    print("Dunn post-hoc test BT")
+    dunn = sp.posthoc_dunn(
+        summary_by_cell_to_plot,
+        val_col="last_y",
+        group_col="group",
+        p_adjust="holm"   # ou bonferroni, fdr_bh...
+    )
+    
+    CLES_print(summary_by_cell_to_plot, dunn, "last_y")
+    
+    
+    print("\nDunn post-hoc test dx")
+    dunn = sp.posthoc_dunn(
+        summary_by_cell_to_plot,
+        val_col="dx",
+        group_col="group",
+        p_adjust="holm"   # ou bonferroni, fdr_bh...
+    )
+    
+    CLES_print(summary_by_cell_to_plot, dunn, "dx")
+    
+    
+    print("\nDunn post-hoc test speedCell")
+    dunn = sp.posthoc_dunn(
+        summary_by_time_to_plot,
+        val_col="speedCell",
+        group_col="group",
+        p_adjust="holm"   # ou bonferroni, fdr_bh...
+    )
+    
+    CLES_print(summary_by_time_to_plot, dunn, "speedCell")
+    
+    
+    
+    
+    
+    
+    
+    
 
 

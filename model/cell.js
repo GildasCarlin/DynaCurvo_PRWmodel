@@ -344,7 +344,7 @@ class Cell {
   
   // 1.trajectory recording
   sauvegarde_interval(t){
-    if (t_last_mesure>=it_mesure){
+    if (t_last_mesure>=it_mesure && data){
       this.sauvegarde(t);
       if (this.cellID == nbCell){ 
         t_last_mesure = 0;

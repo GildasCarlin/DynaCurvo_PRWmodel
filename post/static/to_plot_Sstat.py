@@ -215,7 +215,7 @@ ax1.fill_between(xbornes,
 ###### plot S_stat
 s_stat = np.abs(list_central - cent_flat)
 print("------------------------------------ experimental values of s_stat")
-print('s_stat =',s_stat)
+print('s_inst =',s_stat)
 ax1.scatter(x, s_stat, color='blue', s=150)
 
 
@@ -224,7 +224,7 @@ theta0 = [3., 3., .5]
 res = opt.least_squares(fun, theta0, bounds=([0., 0., 0.], [np.inf, np.inf, np.inf])) 
 RMSE=np.sqrt(np.mean((np.square(res.fun))))
 
-print("\n------------------------------------ fit of s_tat")
+print("\n------------------------------------ fit of s_inst")
 print("... A={}µm/s, tau={}µm, b={}µm/s".format(res.x[0], res.x[1], res.x[2]))
 print('... residuals =', res.fun)
 print("... RMSE={}µm/s".format(RMSE))
@@ -236,7 +236,7 @@ ax1.text(100., .05, r"RMSE={}µm/s".format(round(RMSE, 3)), fontsize=14)
 
 ###### beautiful figure
 ax1.set_xlabel("Wavelength (µm)", fontsize=20)
-ax1.set_ylabel("Cell velocity (µm/s)", fontsize=20)
+ax1.set_ylabel("Cell speed (µm/s)", fontsize=20)
 
 y0, y1 = ax1.get_ylim()
 ax1.set_ylim(0., y1+.05)
@@ -246,7 +246,7 @@ ax1.set_xlim(left=xbornes[0], right=xbornes[1])
 handles, labels = plt.gca().get_legend_handles_labels()
 point1 = Line2D([0], [0], label=r"mean velocity $\overline{v}_{\lambda}$", marker='s', markersize=10, markerfacecolor='black', linestyle='', markeredgecolor='white')
 point2 = Line2D([0], [0], label=r"$|\overline{v}_{\lambda} - \overline{v}_{flat}|$", marker='o', markersize=10, markerfacecolor='blue', linestyle='', markeredgecolor='white')
-point3 = Line2D([0], [0], label=r"$s_{stat}$ exponential fit", color='blue', markeredgecolor='white', linestyle='--')
+point3 = Line2D([0], [0], label=r"$s_{inst}$ exponential fit", color='blue', markeredgecolor='white', linestyle='--')
 handles.extend([point1, point2, point3])
 ax1.legend(handles=handles, fontsize=15)
 

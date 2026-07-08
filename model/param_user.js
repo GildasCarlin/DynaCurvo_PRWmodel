@@ -47,11 +47,11 @@
 //                               -- wave celerity c>=0 (µm/s)
 //                               -- initial phase phi0 (unitless) (commun for the two directions)
 
-let surface_title='right_sinus';
+let surface_title='snake_sinus';
 
 let a=10.0;
-let lambda=80.0;
-let c=0.4;
+let lambda=20.0;
+let c=0.5;
 let phi0=0.0;
 
 let w=0.0;
@@ -74,32 +74,32 @@ let central_metric = 'mean';
 
 // assumption on cell dynamic    true  /  false
 let surf_assumption=true;
-let curv_assumption=false;
+let curv_assumption=true;
 
 // III. Model integration
 //-------------------------------------------------------------------------------------------------------
 
 // trajectory sample (seconds)
-let dt_mesure=0.1;
+let dt_mesure=15.0;
 
 // simulation is stopped when the window is closed. Tmax is the duration in seconds of the trajectories recording. 1200s=20min
-let Tmax=600.0;
+let Tmax=1200.0;
 
 
 // IV. Others
 //-------------------------------------------------------------------------------------------------------
 
 // export a .txt file containing trajectories data (exported in the Downloads folder)
-let data=true;
+let data=false;
 let file_name_data = 'data';
 
 // draw 
-let draw_cells=false;
+let draw_cells=true;
 let draw_traj = false;   // deprecated if nbCell>5
 
 // record screenshot video
-let screen = false;
-let captureLength = 100;  // number of frames recorded 8000=20min
+let screen = true;
+let captureLength = 8000;  // number of frames recorded 8000=20min
 
 
 
