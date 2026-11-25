@@ -149,6 +149,7 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
     df.insert(pos0+11, "speedCell", (df["Vx"].pow(2) + df["Vy"].pow(2) + df["VzCell"].pow(2)).pow(.5))
     df.insert(pos0+12, "speedSub", df["VzSub"].pow(2).pow(.5))
 
+    df=df.drop("theta", axis=1)
     df = df.dropna().reset_index(drop=True)
 
     if check_unity:
@@ -178,7 +179,7 @@ def computeCellVelocity(metadf, df, check_unity=False, report=False):
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="Other_surfaces" # os.path.join("SpeedDistribution", "c=0.0")
+study="NDSC" # os.path.join("SpeedDistribution", "c=0.0")
 
 # assets
 path_to_assets=os.path.join(os.getcwd(), substrate_regime, "assets", study)
@@ -188,7 +189,7 @@ must_be_int = ['Surface Index', 'Number of Cells']
 
 ## list of wave celerity to plot distributions
 indiv=False
-c_list = [.1, .4, .6, 2.]
+c_list = [0.0, .1, .4, .6, 2.]
 
 ## velocity mean or med
 vel_cent = 'mean'

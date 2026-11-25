@@ -24,7 +24,7 @@ from map import *
 
 # study
 substrate_regime="dyna"  # dyna or static
-study="DSC_lookingForCsat_vinst=0_q=0_Zspeed"
+study="NDSC_speed"
 
 # exported file (at the end of the simulation)
 home=os.path.expanduser("~")
@@ -37,7 +37,7 @@ path_to_UI = os.path.join("..", "model", "param_user.js")
 # assets
 path_to_assets=os.path.join("..", "post", substrate_regime, "assets")
 
-# TEST code before actual run (True), False otherwise
+# TEST code (False) before actual run (True).
 TEST=False
 
 # ================================================================================================================
@@ -118,7 +118,7 @@ for key, values in sim.items():
     ## if a data.txt exists in the target folder, the simulation is considered done and ignored
     path=getPath(values)
     if TEST:
-        print(path)
+        print(".. work folder:", path)
 
     if os.path.isfile(os.path.join(path, "data.txt")):
         print("...... simulation already done !")
@@ -148,7 +148,7 @@ for key, values in sim.items():
 
     ###... and close simulation
     if not TEST:
-        os.system(r'taskkill /f /im msedge.exe')
+        os.system(r'taskkill /f /im firefox.exe')   # msedge.exe   firefox.exe
 #
 
 

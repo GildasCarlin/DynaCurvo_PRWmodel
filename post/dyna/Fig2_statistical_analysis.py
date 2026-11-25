@@ -14,12 +14,12 @@ from scipy import stats
 from scipy.stats import norm
 import pingouin as pg
 import scikit_posthocs as sp
-import openturns as ot
+#import openturns as ot
 
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from openturns.viewer import View
+#from openturns.viewer import View
 
 # ================================================================================================================
 # ================================================================================================================
@@ -164,7 +164,7 @@ def checkCelerityEffect(quantity, assumption):
         data_to_test = all_last.copy()
     elif dependant_variable == 'dx':
         data_to_test = all_dx.copy()
-    elif dependant_variable in ['speed', 'speedCorr']:
+    elif dependant_variable in ['speed', 'speedCorr', "speedCell"]:
         data_to_test = all_vd.copy()
 
     data_to_test = data_to_test[data_to_test['assumption']==assumption]
@@ -342,10 +342,10 @@ def cles_safe(x, y):
 
 # study
 substrate_regime="dyna"  # dyna or static
-NDSC_study="NDSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
-DSC_study="DSC_CurvatureCorrection_RightSinus_20min_VariousCelerity"
-DSC_speed="DSC_SpeedDistribution"
-NDSC_speed="NDSC_SpeedDistribution"
+NDSC_study="NDSC"
+DSC_study="DSC"
+DSC_speed="DSC_speed"
+NDSC_speed="NDSC_speed"
 # assets
 root=os.getcwd()
 NDSC_assets=os.path.join(root, substrate_regime, "assets", NDSC_study)
@@ -368,7 +368,7 @@ celerity_effect=True
 assumption_effect=False
 
 # what to test
-quantity="speedCorr"  # dx, last_y, speedCorr, speed, r_d
+quantity="dx"  # dx, last_y, speedCell, speed, r_d
 nature="DSC"
 
 # ================================================================================================================
@@ -399,6 +399,7 @@ vd_NS = pd.read_csv(NDSC_speed_assets + "\\" + "vd.csv")
 vd_NS = vd_NS[vd_NS['celerity'].isin(celerities)]
 vd_NS = vd_NS[vd_NS['wavelength']==wavelength]
 vd_NS.insert(0, 'assumption', len(vd_NS) * [assumption])
+all_vd=vd_NS.copy()
 
 #### S
 assumption = 'DSC'
@@ -412,15 +413,15 @@ dx_S = dx_S[dx_S['celerity'].isin(celerities)]
 dx_S = dx_S[dx_S['wavelength']==wavelength]
 dx_S.insert(0, 'assumption', len(dx_S) * [assumption])
 
-vd_S = pd.read_csv(DSC_speed_assets + "\\" + "vd.csv")
-vd_S = vd_S[vd_S['celerity'].isin(celerities)]
-vd_S = vd_S[vd_S['wavelength']==wavelength]
-vd_S.insert(0, 'assumption', len(vd_S) * [assumption])
+#vd_S = pd.read_csv(DSC_speed_assets + "\\" + "vd.csv")
+#vd_S = vd_S[vd_S['celerity'].isin(celerities)]
+#vd_S = vd_S[vd_S['wavelength']==wavelength]
+#vd_S.insert(0, 'assumption', len(vd_S) * [assumption])
 
 ######## concat
 all_last = pd.concat([last_NS, last_S], ignore_index=True)
 all_dx = pd.concat([dx_NS, dx_S], ignore_index=True)
-all_vd = pd.concat([vd_NS, vd_S], ignore_index=True)
+#all_vd = pd.concat([vd_NS, vd_S], ignore_index=True)
 
 ### convert to mm
 all_last['last_y'] /= 1000.
